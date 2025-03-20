@@ -1,0 +1,26 @@
+$primary: #85c12b;
+
+@import "../../node_modules/bootstrap/scss/bootstrap";
+
+.btn-primary {
+    color: $gray-100;
+}
+
+.btn-primary:hover {
+    color: $light;
+}
+
+
+.navbar-profile {
+    width: 40px;
+    height: 40px;
+    margin: 5px;
+
+    color: $secondary;
+}
+
+.navbar-profile:hover {
+    
+    color: shade-color($secondary, 20%);
+}
+
