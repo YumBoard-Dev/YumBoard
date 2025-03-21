@@ -72,7 +72,6 @@ app.use(
 
 app.use('/static', express.static('resources')); // Make css files and images work
 
-console.log(__dirname);
 
 // *****************************************************
 // <!-- Section 4 : API Routes -->
@@ -80,8 +79,20 @@ console.log(__dirname);
 
 
 app.get('/', (req, res) => {
+    res.render("pages/home", {
+        loggedIn: false, // TODO make this dependent on whether or not user is actually logged in
+    }); 
+});
+
+app.get('/login', (req, res) => {
     res.render("pages/login", {
-        loggedIn: true, // TODO make this dependent on whether or not user is actually logged in
+        loggedIn: false, // TODO make this dependent on whether or not user is actually logged in
+    }); 
+});
+
+app.get('/register', (req, res) => {
+    res.render("pages/register", {
+        loggedIn: false, // TODO make this dependent on whether or not user is actually logged in
     }); 
 });
 
