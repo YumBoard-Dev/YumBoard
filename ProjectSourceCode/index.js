@@ -78,21 +78,27 @@ app.use('/static', express.static('resources')); // Make css files and images wo
 // *****************************************************
 
 
+var isLoggedIn = () => {
+    return false; // TODO make this dependent on whether or not user is actually logged in
+}
+
+
+
 app.get('/', (req, res) => {
     res.render("pages/home", {
-        loggedIn: false, // TODO make this dependent on whether or not user is actually logged in
+        loggedIn: isLoggedIn, 
     }); 
 });
 
 app.get('/login', (req, res) => {
     res.render("pages/login", {
-        loggedIn: false, // TODO make this dependent on whether or not user is actually logged in
+        loggedIn: isLoggedIn, 
     }); 
 });
 
 app.get('/register', (req, res) => {
     res.render("pages/register", {
-        loggedIn: false, // TODO make this dependent on whether or not user is actually logged in
+        loggedIn: isLoggedIn,
     }); 
 });
 
