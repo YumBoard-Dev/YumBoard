@@ -1,17 +1,11 @@
 /* This holds the main CSS that is applied to everything */
 
-body {
-    background-color: #FFFEFF;
-}
-
 .navbar-brand {
     font-family: "Inter", sans-serif;
 }
 
 .navbar {
-    box-shadow: 0 0 10px #ffffff, 
-    -1px -1px 5px #d1d1d1,
-    1px 1px 5px #d1d1d1;
+    box-shadow: 0 0 10px #2d2d2d29;
 }
 
 .nav-link {
@@ -20,13 +14,21 @@ body {
 
 
 footer {
-    box-shadow: 0 0 10px #ffffff, 
-    -1px -1px 5px #d1d1d1,
-    1px 1px 5px #d1d1d1;
+    box-shadow: 0 0 10px #2d2d2d29;
 }
 
 
+.recipe-card-image {
+    width: 100%;
+    height: 20rem;
+    object-fit: cover;
+    border-radius: 10px;
+}
 
+
+.recipe-card {
+    border-radius: 10px;
+}
 
 
 
