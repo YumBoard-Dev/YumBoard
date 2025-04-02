@@ -21,7 +21,7 @@
         </li>
         {{#if loggedIn}}
         <li class="nav-item">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/list">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-list-task m-2" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
@@ -35,7 +35,7 @@
           </a>
         </li>
         <li class="nav-item d-block d-lg-none">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/profile">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-person-circle m-2" viewBox="0 0 16 16">
               <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
@@ -46,7 +46,7 @@
           </a>
         </li>
         <li class="nav-item d-block d-lg-none">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/settings">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-gear-fill m-2" viewBox="0 0 16 16">
               <path
@@ -56,7 +56,7 @@
           </a>
         </li>
         <li class="nav-item d-block d-lg-none">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/logout">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
@@ -69,7 +69,7 @@
         </li>
         {{else}}
           <li class="nav-item d-block d-lg-none">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/login">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
@@ -81,7 +81,7 @@
           </a>
         </li>
           <li class="nav-item d-block d-lg-none">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/register">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
@@ -113,7 +113,7 @@
         </button>
         {{#if loggedIn}}
         <ul class="dropdown-menu">
-          <li><a class="dropdown-item" href="/">
+          <li><a class="dropdown-item" href="/profile">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
                 class="bi bi-person-circle m-2" viewBox="0 0 16 16">
                 <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
@@ -122,7 +122,7 @@
               </svg>
               Profile
             </a></li>
-          <li><a class="dropdown-item" href="/">
+          <li><a class="dropdown-item" href="/settings">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
                 class="bi bi-gear-fill m-2" viewBox="0 0 16 16">
                 <path
