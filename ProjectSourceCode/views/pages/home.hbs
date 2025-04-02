@@ -1,1 +1,32 @@
-<h1>Home Page</h1>
+<div class="container width-100 display-flex justify-content-center" style="margin-top: 20px;">
+    {{#each recipes}}
+    <div class="row p-2 display-flex justify-content-center">
+        <div class="card p-3 recipe-card" style="width: 50rem;">
+            <a href="/recipes/{{recipe_id}}">
+                <img src="{{image_url}}" class="card-img-top recipe-card-image" alt="{{title}}">
+            </a>
+            <div class="card-body">
+                <div class="m-3">
+                    <h4 class="card-title">{{title}}</h4>
+                    <p class="card-text">{{description}}</p>
+                </div>
+                <hr/>
+                <div class="container">
+                    <div class="row">
+                        <div class="col">
+                            <p>{{getCommaDelimitedCount ingredients}} Ingredients</p>
+                            <a href="/recipes/{{recipe_id}}" class="btn btn-primary">View Recipe</a>
+                        </div>
+                        <div class="col">
+                            <p>Prep Time: {{prep_time}} minutes</p>
+                            <p>Cook Time: {{cook_time}} minutes</p>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+    {{/each}}
+</div>
