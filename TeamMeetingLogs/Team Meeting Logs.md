@@ -18,7 +18,13 @@ Work will be due right before the TA meeting on Tuesdays.
 
 # April 1st
 
-- 
+- Lots of frontend is done, database creation is done
+
+- Jaxon: Regex requirements for password
+- Aryaman: Figure out how to upload/store images 
+- Jose: 
+- Jason: 
+- Dresden: Displaying recipes on the home page
 
 
 
