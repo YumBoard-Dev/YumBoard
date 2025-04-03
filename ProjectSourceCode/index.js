@@ -120,6 +120,12 @@ var isLoggedIn = () => {
 
 
 
+// Dummy route to test the server
+app.get('/welcome', (req, res) => {
+    res.json({status: 'success', message: 'Welcome!'});
+  });
+
+
 
 app.get('/', (req, res) => {
 
@@ -167,10 +173,7 @@ app.get('/register', (req, res) => {
 
 
 
-// Dummy route to test the server
-app.get('/welcome', (req, res) => {
-    res.json({status: 'success', message: 'Welcome!'});
-  });
+
 
 
 
