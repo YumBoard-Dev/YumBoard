@@ -1,0 +1,65 @@
+<a class="btn btn-primary position-fixed translate-middle rounded-circle d-flex justify-content-center align-items-center p-1 floating-shadow"
+    style="bottom: 20px; right:20px; width:55px; height:55px" data-bs-toggle="offcanvas" href="#offcanvasFilter"
+    role="button" aria-controls="offcanvasFilter">
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-filter"
+        viewBox="0 0 16 16">
+        <path
+            d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5" />
+    </svg>
+</a>
+
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasFilter" aria-labelledby="offcanvasFilterLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasFilterLabel">Filter Recipes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body overflow-auto">
+        <hr />
+        <div>
+            <p>
+                TODO: Add filter options here using an HTML form and have a confirm button to send a request to the
+                server
+                and get the new recipe list.
+            </p>
+            <p>
+                Note: More work might be needed to keep filter options selected when the page is rerendered. Also,
+                filter by
+                tags.
+            </p>
+            <p>
+                Using checkboxes like this isn't the prettiest, but it's functional at least.
+            </p>
+        </div>
+
+        <hr />
+
+        <div class="form-check mt-3" id="filter-form">
+            <div class="vstack gap-3" style="margin-left: 10px;">
+                <div class="mb-3">
+                    <label for="exampleFormControlInput1" class="form-label">Filter by User</label>
+                    <input type="text" class="form-control" id="exampleFormControlInput1" placeholder="Username">
+                </div>
+                <div>
+                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Tag 1
+                    </label>
+                </div>
+                <div>
+                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault1">
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Tag 2
+                    </label>
+                </div>
+                <div>
+                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault2">
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Tag 3
+                    </label>
+                </div>
+                <button class="form-control btn btn-primary" style="width: 100px;" type="submit">Search</button>
+            </div>
+        </div>
+    </div>
+</div>

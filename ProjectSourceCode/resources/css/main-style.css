@@ -30,6 +30,10 @@ footer {
     border-radius: 10px;
 }
 
+.floating-shadow {
+    box-shadow: 0 0 15px #2d2d2d9a;
+}
+
 
 
 
