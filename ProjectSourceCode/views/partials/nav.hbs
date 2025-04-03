@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg bg-body-tertiary" id="navbar">
+<nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top" id="navbar">
   <div class="container-fluid">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
       aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -7,8 +7,7 @@
     <a class="navbar-brand" href="/">YumBoard</a>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav me-auto mb-2 mb-md-0">
-        {{!-- TODO: Use handlebars to put "active" class on whichever nav-item is active --}}
-        <li class="nav-item {{#if active}} active {{/if}}">
+        <li class="nav-item">
           <a class="nav-link" href="/">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-house-fill m-2" viewBox="0 0 16 16">
@@ -19,8 +18,9 @@
             Home
           </a>
         </li>
+        {{#if loggedIn}}
         <li class="nav-item">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/list">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-list-task m-2" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
@@ -34,7 +34,7 @@
           </a>
         </li>
         <li class="nav-item d-block d-lg-none">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/profile">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-person-circle m-2" viewBox="0 0 16 16">
               <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
@@ -45,7 +45,7 @@
           </a>
         </li>
         <li class="nav-item d-block d-lg-none">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/settings">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-gear-fill m-2" viewBox="0 0 16 16">
               <path
@@ -55,7 +55,7 @@
           </a>
         </li>
         <li class="nav-item d-block d-lg-none">
-          <a class="nav-link" href="./page2">
+          <a class="nav-link" href="/logout">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
@@ -66,13 +66,42 @@
             Log Out
           </a>
         </li>
+        {{else}}
+        <li class="nav-item d-block d-lg-none">
+          <a class="nav-link" href="/login">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
+              class="padding-3 bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
+              <path fill-rule="evenodd"
+                d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0z" />
+              <path fill-rule="evenodd"
+                d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z" />
+            </svg>
+            Log In
+          </a>
+        </li>
+        <li class="nav-item d-block d-lg-none">
+          <a class="nav-link" href="/register">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
+              class="padding-3 bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
+              <path fill-rule="evenodd"
+                d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0" />
+              <path
+                d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z" />
+              <path
+                d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z" />
+            </svg>
+            Register
+          </a>
+        </li>
+        {{/if}}
         {{!-- <li class="nav-item">
           <a class="nav-link" href="./page3">Page 3</a>
         </li> --}}
       </ul>
     </div>
     {{!-- TODO: Make this turn into a login button if you aren't logged in. --}}
-    <div class="d-none d-lg-flex"> 
+    {{#if loggedIn}}
+    <div class="d-none d-lg-flex">
       <div class="dropstart">
         <button class="btn btn-link" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -82,9 +111,8 @@
               d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1" />
           </svg>
         </button>
-        {{#if loggedIn}}
         <ul class="dropdown-menu">
-          <li><a class="dropdown-item" href="/">
+          <li><a class="dropdown-item" href="/profile">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
                 class="bi bi-person-circle m-2" viewBox="0 0 16 16">
                 <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
@@ -93,7 +121,7 @@
               </svg>
               Profile
             </a></li>
-          <li><a class="dropdown-item" href="/">
+          <li><a class="dropdown-item" href="/settings">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
                 class="bi bi-gear-fill m-2" viewBox="0 0 16 16">
                 <path
@@ -115,7 +143,7 @@
               Log Out
             </a></li>
         </ul>
-        {{else}}
+
         <ul class="dropdown-menu">
           <li><a class="dropdown-item p-2" href="/login">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
@@ -140,8 +168,16 @@
               Register
             </a></li>
         </ul>
-        {{/if}}
       </div>
     </div>
+    {{else}}
+    <div class="d-none d-lg-flex">
+      <a class="btn btn-primary m-2" href="/login">Log In</a>
+      <a class="btn btn-secondary m-2" href="/register">Register</a>
+
+    </div>
+
+    {{/if}}
+
   </div>
 </nav>
