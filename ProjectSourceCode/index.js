@@ -25,7 +25,9 @@ const hbs = handlebars.create({
     partialsDir: __dirname + '/views/partials',
 });
 
-//database configuration
+
+// database configuration
+
 const dbConfig = {
     host: 'db', // the database server
     port: 5432, // the database port
@@ -86,7 +88,6 @@ Handlebars.registerHelper("getCommaDelimitedCount", function (text) {
 // <!-- Section 4 : API Routes -->
 // *****************************************************
 
-
 const exampleRecipes = [{
     "recipe_id": 1234,
     "title": "Spaghetti Bolognese",
@@ -111,7 +112,75 @@ const exampleRecipes = [{
     "image_url": "/static/images/placeholders/placeholder_meal.png"
 }];
 
+var isLoggedIn = (req) => {
+    return req.session && req.session.userId != null;
+};
 
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+
+    // Validate username and password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,15}$/;
+    if (!username || !password) {
+        return res.status(400).send('Username and password are required.');
+    }
+    if (!passwordRegex.test(password)) {
+        return res.status(400).send('Password must be 8-15 characters long, include at least one lowercase letter, one uppercase letter, and one special character.');
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.none(
+            'INSERT INTO users (username, password) VALUES ($1, $2)',
+            [username, hashedPassword]
+        );
+        req.session.username = username; // Use username for session tracking
+        res.redirect('/');
+    } catch (error) {
+        console.error(error);
+        if (error.code === '23505') { // Handle unique constraint violation
+            res.status(400).send('Username already exists.');
+        } else {
+            res.status(500).send('Error registering user.');
+        }
+    }
+});
+
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).send('Username and password are required.');
+    }
+
+    try {
+        const user = await db.oneOrNone(
+            'SELECT username, password FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).send('Invalid username or password.');
+        }
+
+        req.session.username = user.username; // Use username for session tracking
+        res.redirect('/');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error logging in.');
+    }
+});
+
+
+app.get('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Error logging out.');
+        }
+        res.redirect('/login');
+    });
+});
 
 
 var isLoggedIn = () => {
@@ -153,7 +222,8 @@ app.get('/', (req, res) => {
     res.cookie('theme', 'light'); // TODO Set this at the same time the session variable is set.
 
     res.render("pages/home", {
-        loggedIn: isLoggedIn,
+        loggedIn: req.session && req.session.username != null,
+        username: req.session ? req.session.username : null,
         recipes: exampleRecipes,
         theme: req.cookies.theme != null ? req.cookies.theme : 'light',
     });
@@ -161,56 +231,15 @@ app.get('/', (req, res) => {
 
 app.get('/login', (req, res) => {
     res.render("pages/login", {
-        loggedIn: isLoggedIn,
+        loggedIn: isLoggedIn(req),
     });
 });
 
 app.get('/register', (req, res) => {
     res.render("pages/register", {
-        loggedIn: isLoggedIn,
+        loggedIn: isLoggedIn(req),
     });
 });
-
-// Register
-app.post('/register', async (req, res) => {
-    //hash the password using bcrypt library
-    try {
-        const hash = await bcrypt.hash(req.body.password, 10);
-
-        let user = await db.one(
-            'INSERT INTO users VALUES ($1, $2) RETURNING *',
-            [req.body.username, hash]
-        ).then(() => {
-            res.status(200).json({
-                message: "Success"
-            }).send();
-            // res.redirect('/login');
-            console.log("User registered successfully: " + req.body.username);
-        }).catch(error => {
-            // console.log(error);
-            // res.render("pages/register", {
-            //     loggedIn: isLoggedIn,
-            // });
-            res.status(400);
-            res.json({
-                message: "Invalid input"
-            }).send();
-        });
-    } catch {
-        res.status(400);
-        res.json({
-            message: "Invalid input"
-        }).send();
-        return;
-    }
-});
-
-
-
-
-
-
-
 
 
 

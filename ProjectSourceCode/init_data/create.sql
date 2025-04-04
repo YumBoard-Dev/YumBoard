@@ -13,11 +13,13 @@ DROP TABLE IF EXISTS recipe_to_tags CASCADE;
 -------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS users (
-  username VARCHAR(100) PRIMARY KEY NOT NULL,
-  -- email VARCHAR(100) NOT NULL,
-  password VARCHAR(255) NOT NULL
-  -- profile_pic_url VARCHAR(300),
-  -- created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP    -- Time user was created so it's easier to keep track of users
+  user_id SERIAL PRIMARY KEY NOT NULL,
+  username VARCHAR(100) UNIQUE NOT NULL, -- Unique username for each user
+  email VARCHAR(100), -- Made able to be NULL 
+  password VARCHAR(255) NOT NULL,
+  profile_pic_url VARCHAR(300),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP    -- Time user was created so it's easier to keep track of users
+
 );
 
 -------------------------------------------------
