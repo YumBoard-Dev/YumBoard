@@ -198,7 +198,7 @@ app.post('/login', async (req, res) => {
             // Set both userId and username
             req.session.userId = user.user_id;
             req.session.username = username;
-            
+
             // Save session and wait for completion
             await new Promise((resolve, reject) => {
                 req.session.save((error) => {
@@ -210,7 +210,7 @@ app.post('/login', async (req, res) => {
                     }
                 });
             });
-            
+
             console.log('User logged in successfully:', username);
             return res.redirect('/');
         } else {
@@ -266,10 +266,10 @@ app.post('/register', async (req, res) => {
             'INSERT INTO users (username, password) VALUES ($1, $2)',
             [username, hashedPassword]
         );
-        
+
         // Set session
         req.session.username = username;
-        
+
         // Save session and wait for completion
         await new Promise((resolve, reject) => {
             req.session.save((error) => {
@@ -281,10 +281,10 @@ app.post('/register', async (req, res) => {
                 }
             });
         });
-        
+
         console.log('User registered successfully:', username);
         return res.redirect('/');
-        
+
     } catch (error) {
         console.error(error);
         if (error.code === '23505') {
@@ -301,24 +301,29 @@ app.post('/register', async (req, res) => {
             });
         }
     }
-
-  
-  
-app.get('/post_recipe', (req, res) =>{
-    res.render("pages/post_recipe")
 });
 
-app.post('/post_recipe', (req, res) =>{
+
+app.get('/post_recipe', (req, res) => {
+    res.render("pages/post_recipe", {
+        loggedIn: isLoggedIn(req),
+    })
+});
+
+app.post('/post_recipe', (req, res) => {
     var recipeName = req.body.recipeName;
     var description = req.body.description;
     var time = req.body.duration;
     var instructions = req.body.instructions;
 
-    res.json({
+    res.render("pages/post_recipe", {
         recipeName: recipeName,
         description: description,
         time: time,
-        instructions: instructions
+        instructions: instructions,
+        loggedIn: isLoggedIn(req),
+        message: "Recipe posted successfully! Name: " + recipeName,
+        error: false,
     });
 })
 
