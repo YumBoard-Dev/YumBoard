@@ -305,7 +305,9 @@ app.post('/register', async (req, res) => {
 
 
 app.get('/post_recipe', (req, res) => {
-    res.render("pages/post_recipe")
+    res.render("pages/post_recipe", {
+        loggedIn: isLoggedIn(req),
+    })
 });
 
 app.post('/post_recipe', (req, res) => {
@@ -314,13 +316,13 @@ app.post('/post_recipe', (req, res) => {
     var time = req.body.duration;
     var instructions = req.body.instructions;
 
-    res.json({
+    res.render("pages/post_recipe", {
         recipeName: recipeName,
         description: description,
         time: time,
         instructions: instructions,
-        loggedIn: isLoggedIn(res),
-        message: "Recipe posted successfully!",
+        loggedIn: isLoggedIn(req),
+        message: "Recipe posted successfully! Name: " + recipeName,
         error: false,
     });
 })
