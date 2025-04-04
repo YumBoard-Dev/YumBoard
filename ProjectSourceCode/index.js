@@ -301,8 +301,26 @@ app.post('/register', async (req, res) => {
             });
         }
     }
+
+  
+  
+app.get('/post_recipe', (req, res) =>{
+    res.render("pages/post_recipe")
 });
 
+app.post('/post_recipe', (req, res) =>{
+    var recipeName = req.body.recipeName;
+    var description = req.body.description;
+    var time = req.body.duration;
+    var instructions = req.body.instructions;
+
+    res.json({
+        recipeName: recipeName,
+        description: description,
+        time: time,
+        instructions: instructions
+    });
+})
 
 // ------------------- Logout -------------------
 
