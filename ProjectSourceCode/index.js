@@ -13,6 +13,7 @@ const session = require('express-session'); // To set the session object. To sto
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 const  cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
+const { error } = require('console');
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -179,7 +180,10 @@ app.post('/post_recipe', (req, res) =>{
         recipeName: recipeName,
         description: description,
         time: time,
-        instructions: instructions
+        instructions: instructions,
+        loggedIn: isLoggedIn(res),
+        message: "Recipe posted successfully!",
+        error: false,
     });
 })
 
