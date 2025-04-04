@@ -12,7 +12,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
-const  cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
+const cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -25,26 +25,26 @@ const hbs = handlebars.create({
     partialsDir: __dirname + '/views/partials',
 });
 
-// database configuration
-// const dbConfig = {
-//     host: 'db', // the database server
-//     port: 5432, // the database port
-//     database: process.env.POSTGRES_DB, // the database name
-//     user: process.env.POSTGRES_USER, // the user account to connect with
-//     password: process.env.POSTGRES_PASSWORD, // the password of the user account
-// };
+//database configuration
+const dbConfig = {
+    host: 'db', // the database server
+    port: 5432, // the database port
+    database: process.env.POSTGRES_DB, // the database name
+    user: process.env.POSTGRES_USER, // the user account to connect with
+    password: process.env.POSTGRES_PASSWORD, // the password of the user account
+};
 
-// const db = pgp(dbConfig);
+const db = pgp(dbConfig);
 
-// // test your database
-// db.connect()
-//     .then(obj => {
-//         console.log('Database connection successful'); // you can view this message in the docker compose logs
-//         obj.done(); // success, release the connection;
-//     })
-//     .catch(error => {
-//         console.log('ERROR:', error.message || error);
-//     });
+// test your database
+db.connect()
+    .then(obj => {
+        console.log('Database connection successful'); // you can view this message in the docker compose logs
+        obj.done(); // success, release the connection;
+    })
+    .catch(error => {
+        console.log('ERROR:', error.message || error);
+    });
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -77,10 +77,10 @@ app.use(cookieParser()); // To use cookies
 
 
 
-Handlebars.registerHelper("getCommaDelimitedCount", function(text) {
+Handlebars.registerHelper("getCommaDelimitedCount", function (text) {
     var result = text.split(",").length;
     return new Handlebars.SafeString(result);
-  });
+});
 
 // *****************************************************
 // <!-- Section 4 : API Routes -->
@@ -98,7 +98,7 @@ const exampleRecipes = [{
     "created_at": "2023-10-01T12:00:00Z",
     "public": true,
     "image_url": "/static/images/placeholders/placeholder_meal.png"
-},{
+}, {
     "recipe_id": 1235,
     "title": "Vegan Buddha Bowl",
     "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
@@ -122,8 +122,8 @@ var isLoggedIn = () => {
 
 // Dummy route to test the server
 app.get('/welcome', (req, res) => {
-    res.json({status: 'success', message: 'Welcome!'});
-  });
+    res.json({ status: 'success', message: 'Welcome!' });
+});
 
 
 
@@ -147,14 +147,14 @@ app.get('/', (req, res) => {
     // "image_url": "/static/images/placeholders/placeholder_meal.png"
     // "username": "user123",
     // "profile_pic_url": "/static/images/placeholders/placeholder_user.png"
-    
-   
-    
+
+
+
     res.cookie('theme', 'light'); // TODO Set this at the same time the session variable is set.
 
     res.render("pages/home", {
         loggedIn: isLoggedIn,
-        recipes: exampleRecipes, 
+        recipes: exampleRecipes,
         theme: req.cookies.theme != null ? req.cookies.theme : 'light',
     });
 });
@@ -170,6 +170,41 @@ app.get('/register', (req, res) => {
         loggedIn: isLoggedIn,
     });
 });
+
+// Register
+app.post('/register', async (req, res) => {
+    //hash the password using bcrypt library
+    try {
+        const hash = await bcrypt.hash(req.body.password, 10);
+
+        let user = await db.one(
+            'INSERT INTO users VALUES ($1, $2) RETURNING *',
+            [req.body.username, hash]
+        ).then(() => {
+            res.status(200).json({
+                message: "Success"
+            }).send();
+            // res.redirect('/login');
+            console.log("User registered successfully: " + req.body.username);
+        }).catch(error => {
+            // console.log(error);
+            // res.render("pages/register", {
+            //     loggedIn: isLoggedIn,
+            // });
+            res.status(400);
+            res.json({
+                message: "Invalid input"
+            }).send();
+        });
+    } catch {
+        res.status(400);
+        res.json({
+            message: "Invalid input"
+        }).send();
+        return;
+    }
+});
+
 
 
 
