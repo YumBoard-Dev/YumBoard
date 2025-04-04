@@ -26,25 +26,25 @@ const hbs = handlebars.create({
 });
 
 // database configuration
-// const dbConfig = {
-//     host: 'db', // the database server
-//     port: 5432, // the database port
-//     database: process.env.POSTGRES_DB, // the database name
-//     user: process.env.POSTGRES_USER, // the user account to connect with
-//     password: process.env.POSTGRES_PASSWORD, // the password of the user account
-// };
+const dbConfig = {
+    host: 'db', // the database server
+    port: 5432, // the database port
+    database: process.env.POSTGRES_DB, // the database name
+    user: process.env.POSTGRES_USER, // the user account to connect with
+    password: process.env.POSTGRES_PASSWORD, // the password of the user account
+};
 
-// const db = pgp(dbConfig);
+const db = pgp(dbConfig);
 
-// // test your database
-// db.connect()
-//     .then(obj => {
-//         console.log('Database connection successful'); // you can view this message in the docker compose logs
-//         obj.done(); // success, release the connection;
-//     })
-//     .catch(error => {
-//         console.log('ERROR:', error.message || error);
-//     });
+// test your database
+db.connect()
+    .then(obj => {
+        console.log('Database connection successful'); // you can view this message in the docker compose logs
+        obj.done(); // success, release the connection;
+    })
+    .catch(error => {
+        console.log('ERROR:', error.message || error);
+    });
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -86,7 +86,6 @@ Handlebars.registerHelper("getCommaDelimitedCount", function(text) {
 // <!-- Section 4 : API Routes -->
 // *****************************************************
 
-
 const exampleRecipes = [{
     "recipe_id": 1234,
     "title": "Spaghetti Bolognese",
@@ -111,66 +110,95 @@ const exampleRecipes = [{
     "image_url": "/static/images/placeholders/placeholder_meal.png"
 }];
 
+var isLoggedIn = (req) => {
+    return req.session && req.session.userId != null;
+};
 
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
 
+    // Validate username and password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,15}$/;
+    if (!username || !password) {
+        return res.status(400).send('Username and password are required.');
+    }
+    if (!passwordRegex.test(password)) {
+        return res.status(400).send('Password must be 8-15 characters long, include at least one lowercase letter, one uppercase letter, and one special character.');
+    }
 
-var isLoggedIn = () => {
-    return true; // TODO make this dependent on whether or not user is actually logged in
-}
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.none(
+            'INSERT INTO users (username, password) VALUES ($1, $2)',
+            [username, hashedPassword]
+        );
+        req.session.username = username; // Use username for session tracking
+        res.redirect('/');
+    } catch (error) {
+        console.error(error);
+        if (error.code === '23505') { // Handle unique constraint violation
+            res.status(400).send('Username already exists.');
+        } else {
+            res.status(500).send('Error registering user.');
+        }
+    }
+});
 
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
 
+    if (!username || !password) {
+        return res.status(400).send('Username and password are required.');
+    }
 
+    try {
+        const user = await db.oneOrNone(
+            'SELECT username, password FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).send('Invalid username or password.');
+        }
+
+        req.session.username = user.username; // Use username for session tracking
+        res.redirect('/');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error logging in.');
+    }
+});
+
+app.get('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Error logging out.');
+        }
+        res.redirect('/login');
+    });
+});
 
 app.get('/', (req, res) => {
-
-    // TODO Make a query to the database to get the recipes relevant to the user
-    // Make sure the query includes: 
-    // 1. All values for a recipe row in the database
-    // 2. username and profile_pic_url for the user (based on the user_id found in recipe.created_by)
-
-    // Example of what the page needs:
-    // "recipe_id": 1234,
-    // "title": "Spaghetti Bolognese",
-    // "description": "A classic Italian pasta dish with a rich meat sauce.",
-    // // Instructions are in a string separated by "|"                             
-    // "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
-    // "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
-    // "created_by": "123456",
-    // "created_at": "2023-10-01T12:00:00Z",
-    // "public": true,
-    // "image_url": "/static/images/placeholders/placeholder_meal.png"
-    // "username": "user123",
-    // "profile_pic_url": "/static/images/placeholders/placeholder_user.png"
-    
-   
-    
-    res.cookie('theme', 'light'); // TODO Set this at the same time the session variable is set.
-
     res.render("pages/home", {
-        loggedIn: isLoggedIn,
-        recipes: exampleRecipes, 
+        loggedIn: req.session && req.session.username != null,
+        username: req.session ? req.session.username : null,
+        recipes: exampleRecipes,
         theme: req.cookies.theme != null ? req.cookies.theme : 'light',
     });
 });
 
 app.get('/login', (req, res) => {
     res.render("pages/login", {
-        loggedIn: isLoggedIn,
+        loggedIn: isLoggedIn(req),
     });
 });
 
 app.get('/register', (req, res) => {
     res.render("pages/register", {
-        loggedIn: isLoggedIn,
+        loggedIn: isLoggedIn(req),
     });
 });
-
-
-
-
-
-
-
 
 // starting the server and keeping the connection open to listen for more requests
 app.listen(3000);
