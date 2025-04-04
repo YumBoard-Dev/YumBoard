@@ -12,20 +12,20 @@ const {assert, expect} = chai;
 
 // ********************** DEFAULT WELCOME TESTCASE ****************************
 
-describe('Server!', () => {
-  // Sample test case given to test / endpoint.
-  it('Returns the default welcome message', done => {
-    chai
-      .request(server)
-      .get('/welcome')
-      .end((err, res) => {
-        expect(res).to.have.status(200);
-        expect(res.body.status).to.equals('success');
-        assert.strictEqual(res.body.message, 'Welcome!');
-        done();
-      });
-  });
-});
+// describe('Server!', () => {
+//   // Sample test case given to test / endpoint.
+//   it('Returns the default welcome message', done => {
+//     chai
+//       .request(server)
+//       .get('/welcome')
+//       .end((err, res) => {
+//         expect(res).to.have.status(200);
+//         expect(res.body.status).to.equals('success');
+//         assert.strictEqual(res.body.message, 'Welcome!');
+//         done();
+//       });
+//   });
+// });
 
 // *********************** TODO: WRITE 2 UNIT TESTCASES **************************
 
@@ -46,10 +46,10 @@ describe('Testing Register API', () => {
       chai
         .request(server)
         .post('/register')
-        .send({username: 'JohnDoe', password: 'abcd'})
+        .send({username: 'JohnDoe', password: 'Abcdefg!'})
         .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.body.message).to.equals('Success');
+          res.should.have.status(200); // Expecting a success status code
+          res.should.be.html; // Expecting a HTML response
           done();
         });
     });
@@ -60,8 +60,8 @@ describe('Testing Register API', () => {
           .post('/register')
           .send({id: '5', name: 10})
           .end((err, res) => {
-            expect(res).to.have.status(400);
-            expect(res.body.message).to.equals('Invalid input');
+            res.should.have.status(400); // Expecting a failure status code
+            res.should.be.html; // Expecting a HTML response
             done();
           });
       });

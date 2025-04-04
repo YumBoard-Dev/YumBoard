@@ -20,7 +20,10 @@ services:
       - '3000:3000'
     volumes:
       - ./:/home/node/app
-    command: 'npm start' #TODO: change the command to `npm run testandrun` to run mocha
+
+    # Change the command to `npm run testandrun` to run mocha
+    # Change the command tp `npm start` to run the server normally
+    command: 'npm run testandrun' 
 
 
 # This defines our volume(s), which will persist throughout startups.
