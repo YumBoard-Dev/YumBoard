@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg sticky-top bg-body-tertiary" id="navbar">
+<nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top" id="navbar">
   <div class="container-fluid">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
       aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -10,7 +10,7 @@
         <li class="nav-item">
           <a class="nav-link" href="/">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
-              class="padding-3 bi bi-house-fill m-2" viewBox="0 0 16 16">
+              class="padding-3 bi bi-house-fill m-1" viewBox="0 0 16 16">
               <path
                 d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293z" />
               <path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293z" />
@@ -21,7 +21,7 @@
         {{#if loggedIn}}
         <li class="nav-item">
           <a class="nav-link" href="/list">
-            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
+            {{!-- <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
               class="padding-3 bi bi-list-task m-2" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
                 d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5zM3 3H2v1h1z" />
@@ -29,14 +29,31 @@
                 d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1z" />
               <path fill-rule="evenodd"
                 d="M1.5 7a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5zM2 7h1v1H2zm0 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm1 .5H2v1h1z" />
+            </svg> --}}
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-cart4 m-1"
+              viewBox="0 0 16 16">
+              <path
+                d="M0 2.5A.5.5 0 0 1 .5 2H2a.5.5 0 0 1 .485.379L2.89 4H14.5a.5.5 0 0 1 .485.621l-1.5 6A.5.5 0 0 1 13 11H4a.5.5 0 0 1-.485-.379L1.61 3H.5a.5.5 0 0 1-.5-.5M3.14 5l.5 2H5V5zM6 5v2h2V5zm3 0v2h2V5zm3 0v2h1.36l.5-2zm1.11 3H12v2h.61zM11 8H9v2h2zM8 8H6v2h2zM5 8H3.89l.5 2H5zm0 5a1 1 0 1 0 0 2 1 1 0 0 0 0-2m-2 1a2 2 0 1 1 4 0 2 2 0 0 1-4 0m9-1a1 1 0 1 0 0 2 1 1 0 0 0 0-2m-2 1a2 2 0 1 1 4 0 2 2 0 0 1-4 0" />
             </svg>
             Grocery List
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/post_recipe">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
+              class="bi bi-plus-square m-1" viewBox="0 0 16 16">
+              <path
+                d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+              <path
+                d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
+            </svg>
+            Post Recipe
           </a>
         </li>
         <li class="nav-item d-block d-lg-none">
           <a class="nav-link" href="/profile">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
-              class="padding-3 bi bi-person-circle m-2" viewBox="0 0 16 16">
+              class="padding-3 bi bi-person-circle m-1" viewBox="0 0 16 16">
               <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
               <path fill-rule="evenodd"
                 d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1" />
@@ -47,7 +64,7 @@
         <li class="nav-item d-block d-lg-none">
           <a class="nav-link" href="/settings">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
-              class="padding-3 bi bi-gear-fill m-2" viewBox="0 0 16 16">
+              class="padding-3 bi bi-gear-fill m-1" viewBox="0 0 16 16">
               <path
                 d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
             </svg>
@@ -57,7 +74,7 @@
         <li class="nav-item d-block d-lg-none">
           <a class="nav-link" href="/logout">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
-              class="padding-3 bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
+              class="padding-3 bi bi-box-arrow-left m-1" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
                 d="M6 12.5a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-1 0v-2A1.5 1.5 0 0 1 6.5 2h8A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 5 12.5v-2a.5.5 0 0 1 1 0z" />
               <path fill-rule="evenodd"
@@ -70,7 +87,7 @@
         <li class="nav-item d-block d-lg-none">
           <a class="nav-link" href="/login">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
-              class="padding-3 bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
+              class="padding-3 bi bi-box-arrow-left m-1" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
                 d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0z" />
               <path fill-rule="evenodd"
@@ -82,7 +99,7 @@
         <li class="nav-item d-block d-lg-none">
           <a class="nav-link" href="/register">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
-              class="padding-3 bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
+              class="padding-3 bi bi-box-arrow-left m-1" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
                 d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0" />
               <path
@@ -114,7 +131,7 @@
         <ul class="dropdown-menu">
           <li><a class="dropdown-item" href="/profile">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                class="bi bi-person-circle m-2" viewBox="0 0 16 16">
+                class="bi bi-person-circle m-1" viewBox="0 0 16 16">
                 <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
                 <path fill-rule="evenodd"
                   d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1" />
@@ -123,7 +140,7 @@
             </a></li>
           <li><a class="dropdown-item" href="/settings">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                class="bi bi-gear-fill m-2" viewBox="0 0 16 16">
+                class="bi bi-gear-fill m-1" viewBox="0 0 16 16">
                 <path
                   d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
               </svg>
@@ -134,7 +151,7 @@
           </li>
           <li><a class="dropdown-item" href="/logout">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                class="bi bi-box-arrow-left m-2" viewBox="0 0 16 16">
+                class="bi bi-box-arrow-left m-1" viewBox="0 0 16 16">
                 <path fill-rule="evenodd"
                   d="M6 12.5a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-1 0v-2A1.5 1.5 0 0 1 6.5 2h8A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 5 12.5v-2a.5.5 0 0 1 1 0z" />
                 <path fill-rule="evenodd"
@@ -147,7 +164,7 @@
         <ul class="dropdown-menu">
           <li><a class="dropdown-item p-2" href="/login">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                class="bi bi-box-arrow-in-right m-2" viewBox="0 0 16 16">
+                class="bi bi-box-arrow-in-right m-1" viewBox="0 0 16 16">
                 <path fill-rule="evenodd"
                   d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0z" />
                 <path fill-rule="evenodd"
@@ -157,7 +174,7 @@
             </a></li>
           <li><a class="dropdown-item p-2" href="/register">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                class="bi bi-clipboard-check m-2" viewBox="0 0 16 16">
+                class="bi bi-clipboard-check m-1" viewBox="0 0 16 16">
                 <path fill-rule="evenodd"
                   d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0" />
                 <path
@@ -172,8 +189,8 @@
     </div>
     {{else}}
     <div class="d-none d-lg-flex">
-      <a class="btn btn-primary m-2" href="/login">Log In</a>
-      <a class="btn btn-secondary m-2" href="/register">Register</a>
+      <a class="btn btn-primary m-1" href="/login">Log In</a>
+      <a class="btn btn-secondary m-1" href="/register">Register</a>
 
     </div>
 

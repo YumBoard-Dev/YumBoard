@@ -1,11 +1,11 @@
-<div style="margin: 20px; display: flex; justify-content: center;">
+<div class="w-100 h-100 d-flex" style="padding: 20px; justify-content: center;">
     <form action="/login" method="post">
         <div class="container text-center">
             <div class="row p-2">
-                {{!-- {{>message}} --}}
+                <h1>Login</h1>
             </div>
             <div class="row p-2">
-                <h1>Login</h1>
+                {{> alert}}
             </div>
             <div class="row p-2">
                 <input class="form-control" style="width: 300px;" type="textbox" name="username" placeholder="Username">
@@ -19,5 +19,6 @@
             <div class="row p-2 justify-content-center">
                 <p>Don't have an account? <a href="/register">Register</a></p>
             </div>
+        </div>
     </form>
 </div>
