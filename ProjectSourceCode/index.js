@@ -12,7 +12,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
-const  cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
+const cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -25,7 +25,9 @@ const hbs = handlebars.create({
     partialsDir: __dirname + '/views/partials',
 });
 
+
 // database configuration
+
 const dbConfig = {
     host: 'db', // the database server
     port: 5432, // the database port
@@ -77,10 +79,10 @@ app.use(cookieParser()); // To use cookies
 
 
 
-Handlebars.registerHelper("getCommaDelimitedCount", function(text) {
+Handlebars.registerHelper("getCommaDelimitedCount", function (text) {
     var result = text.split(",").length;
     return new Handlebars.SafeString(result);
-  });
+});
 
 // *****************************************************
 // <!-- Section 4 : API Routes -->
@@ -97,7 +99,7 @@ const exampleRecipes = [{
     "created_at": "2023-10-01T12:00:00Z",
     "public": true,
     "image_url": "/static/images/placeholders/placeholder_meal.png"
-},{
+}, {
     "recipe_id": 1235,
     "title": "Vegan Buddha Bowl",
     "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
@@ -169,6 +171,7 @@ app.post('/login', async (req, res) => {
     }
 });
 
+
 app.get('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
@@ -179,7 +182,45 @@ app.get('/logout', (req, res) => {
     });
 });
 
+
+var isLoggedIn = () => {
+    return true; // TODO make this dependent on whether or not user is actually logged in
+}
+
+
+
+// Dummy route to test the server
+app.get('/welcome', (req, res) => {
+    res.json({ status: 'success', message: 'Welcome!' });
+});
+
+
+
 app.get('/', (req, res) => {
+
+    // TODO Make a query to the database to get the recipes relevant to the user
+    // Make sure the query includes: 
+    // 1. All values for a recipe row in the database
+    // 2. username and profile_pic_url for the user (based on the user_id found in recipe.created_by)
+
+    // Example of what the page needs:
+    // "recipe_id": 1234,
+    // "title": "Spaghetti Bolognese",
+    // "description": "A classic Italian pasta dish with a rich meat sauce.",
+    // // Instructions are in a string separated by "|"                             
+    // "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
+    // "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
+    // "created_by": "123456",
+    // "created_at": "2023-10-01T12:00:00Z",
+    // "public": true,
+    // "image_url": "/static/images/placeholders/placeholder_meal.png"
+    // "username": "user123",
+    // "profile_pic_url": "/static/images/placeholders/placeholder_user.png"
+
+
+
+    res.cookie('theme', 'light'); // TODO Set this at the same time the session variable is set.
+
     res.render("pages/home", {
         loggedIn: req.session && req.session.username != null,
         username: req.session ? req.session.username : null,
@@ -200,6 +241,10 @@ app.get('/register', (req, res) => {
     });
 });
 
+
+
+
+
 // starting the server and keeping the connection open to listen for more requests
-app.listen(3000);
+module.exports = app.listen(3000);
 console.log('Server is listening on port 3000');
