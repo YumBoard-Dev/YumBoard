@@ -185,7 +185,7 @@ app.post('/login', async (req, res) => {
         );
 
         if (!user) {
-            return res.status(401).render("pages/login", {
+            return res.status(400).render("pages/login", {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'Invalid username or password.',
@@ -214,7 +214,7 @@ app.post('/login', async (req, res) => {
             console.log('User logged in successfully:', username);
             return res.redirect('/');
         } else {
-            return res.status(401).render("pages/login", {
+            return res.status(400).render("pages/login", {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'Invalid username or password.',
@@ -312,7 +312,11 @@ app.get('/logout', (req, res) => {
             console.error(err);
             return res.status(500).send('Error logging out.');
         }
-        res.redirect('/login');
+        res.status(200).render("pages/login", {
+            loggedIn: isLoggedIn(req),
+            error: false,
+            message: 'Logged out successfully.',
+        });
     });
 });
 
