@@ -13,6 +13,7 @@ const session = require('express-session'); // To set the session object. To sto
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 const cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
+const { error } = require('console');
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -58,12 +59,18 @@ app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json()); // specify the usage of JSON for parsing request body.
 
+
 // initialize session variables
 app.use(
     session({
         secret: process.env.SESSION_SECRET,
-        saveUninitialized: false,
+        saveUninitialized: true,
         resave: false,
+        cookie: {
+            secure: false, // Set to true if using HTTPS
+            httpOnly: true,
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        }
     })
 );
 
@@ -112,89 +119,14 @@ const exampleRecipes = [{
     "image_url": "/static/images/placeholders/placeholder_meal.png"
 }];
 
-var isLoggedIn = (req) => {
-    return req.session && req.session.userId != null;
+function isLoggedIn(req) {
+    return req.session && req.session.username != null;
 };
 
-app.post('/register', async (req, res) => {
-    const { username, password } = req.body;
-
-    // Validate username and password
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,15}$/;
-    if (!username || !password) {
-        return res.status(400).send('Username and password are required.');
-    }
-    if (!passwordRegex.test(password)) {
-        return res.status(400).send('Password must be 8-15 characters long, include at least one lowercase letter, one uppercase letter, and one special character.');
-    }
-
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await db.none(
-            'INSERT INTO users (username, password) VALUES ($1, $2)',
-            [username, hashedPassword]
-        );
-        req.session.username = username; // Use username for session tracking
-        res.redirect('/');
-    } catch (error) {
-        console.error(error);
-        if (error.code === '23505') { // Handle unique constraint violation
-            res.status(400).send('Username already exists.');
-        } else {
-            res.status(500).send('Error registering user.');
-        }
-    }
-});
-
-app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.status(400).send('Username and password are required.');
-    }
-
-    try {
-        const user = await db.oneOrNone(
-            'SELECT username, password FROM users WHERE username = $1',
-            [username]
-        );
-
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).send('Invalid username or password.');
-        }
-
-        req.session.username = user.username; // Use username for session tracking
-        res.redirect('/');
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error logging in.');
-    }
-});
-
-
-app.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send('Error logging out.');
-        }
-        res.redirect('/login');
-    });
-});
-
-
-var isLoggedIn = () => {
-    return true; // TODO make this dependent on whether or not user is actually logged in
-}
 
 
 
-// Dummy route to test the server
-app.get('/welcome', (req, res) => {
-    res.json({ status: 'success', message: 'Welcome!' });
-});
-
-
+// ------------------- Home  -------------------
 
 app.get('/', (req, res) => {
 
@@ -222,12 +154,16 @@ app.get('/', (req, res) => {
     res.cookie('theme', 'light'); // TODO Set this at the same time the session variable is set.
 
     res.render("pages/home", {
-        loggedIn: req.session && req.session.username != null,
+        loggedIn: isLoggedIn(req),
         username: req.session ? req.session.username : null,
         recipes: exampleRecipes,
         theme: req.cookies.theme != null ? req.cookies.theme : 'light',
     });
 });
+
+
+
+// ------------------- Login -------------------
 
 app.get('/login', (req, res) => {
     res.render("pages/login", {
@@ -235,12 +171,150 @@ app.get('/login', (req, res) => {
     });
 });
 
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).send('Username and password are required.');
+    }
+
+    try {
+        const user = await db.oneOrNone(
+            'SELECT username, password FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (!user) {
+            return res.status(401).render("pages/login", {
+                loggedIn: isLoggedIn(req),
+                error: true,
+                message: 'Invalid username or password.',
+            });
+        }
+
+        const match = await bcrypt.compare(password, user.password);
+
+        if (match) {
+            // Set both userId and username
+            req.session.userId = user.user_id;
+            req.session.username = username;
+            
+            // Save session and wait for completion
+            await new Promise((resolve, reject) => {
+                req.session.save((error) => {
+                    if (error) {
+                        console.error(error);
+                        reject(error);
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+            
+            console.log('User logged in successfully:', username);
+            return res.redirect('/');
+        } else {
+            return res.status(401).render("pages/login", {
+                loggedIn: isLoggedIn(req),
+                error: true,
+                message: 'Invalid username or password.',
+            });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).render("pages/login", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error logging in: ' + error.message,
+        });
+    }
+});
+
+
+// ------------------- Register -------------------
+
 app.get('/register', (req, res) => {
     res.render("pages/register", {
         loggedIn: isLoggedIn(req),
     });
 });
 
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+
+    // Validate username and password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,15}$/;
+    if (!username || !password) {
+        return res.status(400).render("pages/register", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Please enter a valid username and password.',
+        });
+    }
+    if (!passwordRegex.test(password)) {
+        return res.status(400).render("pages/register", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Password must be 8-15 characters long, include at least one lowercase letter, one uppercase letter, and one special character.',
+        });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await db.none(
+            'INSERT INTO users (username, password) VALUES ($1, $2)',
+            [username, hashedPassword]
+        );
+        
+        // Set session
+        req.session.username = username;
+        
+        // Save session and wait for completion
+        await new Promise((resolve, reject) => {
+            req.session.save((error) => {
+                if (error) {
+                    console.error(error);
+                    reject(error);
+                } else {
+                    resolve();
+                }
+            });
+        });
+        
+        console.log('User registered successfully:', username);
+        return res.redirect('/');
+        
+    } catch (error) {
+        console.error(error);
+        if (error.code === '23505') {
+            return res.status(400).render("pages/register", {
+                loggedIn: isLoggedIn(req),
+                error: true,
+                message: 'Username already exists',
+            });
+        } else {
+            return res.status(500).render("pages/register", {
+                loggedIn: isLoggedIn(req),
+                error: true,
+                message: 'An error occurred: ' + error.message,
+            });
+        }
+    }
+});
+
+
+// ------------------- Logout -------------------
+
+app.get('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Error logging out.');
+        }
+        res.redirect('/login');
+    });
+});
 
 
 
