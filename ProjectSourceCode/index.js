@@ -120,15 +120,15 @@ const exampleRecipes = [{
 }];
 
 function isLoggedIn(req) {
-    return req.session && req.session.username != null;
-};
+    return req.session && req.session.userId;
+}
 
 
 
 
 // ------------------- Home  -------------------
 
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
 
     // TODO Make a query to the database to get the recipes relevant to the user
     // Make sure the query includes: 
@@ -148,18 +148,50 @@ app.get('/', (req, res) => {
     // "image_url": "/static/images/placeholders/placeholder_meal.png"
     // "username": "user123",
     // "profile_pic_url": "/static/images/placeholders/placeholder_user.png"
+    res.cookie('theme', 'light'); // Set the theme cookie
 
+    try {
+        // Get current user ID from the session (if logged in)
+        const currentUserId = req.session.userId || null;
 
+        // Query to get all public recipes, along with the creator's info,
+        // like count, and a flag indicating if the current user liked the recipe.
+        const recipes = await db.any(`
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.public = true
+            ORDER BY r.created_at DESC
+        `, [currentUserId]);
 
-    res.cookie('theme', 'light'); // TODO Set this at the same time the session variable is set.
-
-    res.render("pages/home", {
-        loggedIn: isLoggedIn(req),
-        username: req.session ? req.session.username : null,
-        recipes: exampleRecipes,
-        theme: req.cookies.theme != null ? req.cookies.theme : 'light',
-    });
+        // Render the home page with the recipes fetched from the database.
+        res.render("pages/home", {
+            loggedIn: isLoggedIn(req),
+            username: req.session ? req.session.username : null,
+            recipes: recipes,
+            theme: req.cookies.theme != null ? req.cookies.theme : 'light',
+            session: req.session  // Pass session so templates can access current user info.
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error fetching recipes");
+    }
 });
+
+
+    
+
+    
 
 
 
@@ -180,7 +212,7 @@ app.post('/login', async (req, res) => {
 
     try {
         const user = await db.oneOrNone(
-            'SELECT username, password FROM users WHERE username = $1',
+            'SELECT user_id, username, password FROM users WHERE username = $1',
             [username]
         );
 
@@ -343,6 +375,82 @@ app.get('/logout', (req, res) => {
     });
 });
 
+
+// ------------------- Likes and Comments -------------------
+//display recipe with likes and comments
+app.get('/recipes/:recipe_id', async (req, res) => {
+    const recipe_id = req.params.recipe_id;
+    try {
+        const recipe = await db.one('SELECT * FROM recipes WHERE recipe_id = $1', [recipe_id]);
+        const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
+        const comments = await db.any(
+            'SELECT c.*, u.username FROM comments c JOIN users u ON c.user_id = u.user_id WHERE recipe_id = $1 ORDER BY created_at ASC',
+            [recipe_id]
+        );
+        res.render('pages/recipe', {
+            recipe,
+            likes: likesCount.count,  // note: count might be a string so convert if needed
+            comments,
+            loggedIn: isLoggedIn(req),
+            username: req.session.username,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error retrieving recipe");
+    }
+});
+
+
+//like/unlike recipe
+app.post('/recipes/:recipe_id/like', async (req, res) => {
+    if (!isLoggedIn(req)) {
+        return res.status(401).send("Unauthorized");
+    }
+    const recipe_id = req.params.recipe_id;
+    const user_id = req.session.userId;
+    try {
+        // Check if a like already exists for this user and recipe.
+        const existingLike = await db.oneOrNone(
+            'SELECT * FROM likes WHERE recipe_id = $1 AND user_id = $2',
+            [recipe_id, user_id]
+        );
+        if (existingLike) {
+            // If a like exists, remove it.
+            await db.none('DELETE FROM likes WHERE recipe_id = $1 AND user_id = $2', [recipe_id, user_id]);
+        } else {
+            // Otherwise, add a new like.
+            await db.none('INSERT INTO likes (recipe_id, user_id, created_at) VALUES ($1, $2, NOW())', [recipe_id, user_id]);
+        }
+        res.redirect('/recipes/' + recipe_id);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error processing like");
+    }
+});
+
+
+//post comment
+app.post('/recipes/:recipe_id/comments', async (req, res) => {
+    if (!isLoggedIn(req)) {
+        return res.status(401).send("Unauthorized");
+    }
+    const recipe_id = req.params.recipe_id;
+    const user_id = req.session.userId;
+    const { comment } = req.body;
+    if (!comment) {
+        return res.status(400).send("Comment is required");
+    }
+    try {
+        await db.none(
+            'INSERT INTO comments (recipe_id, user_id, comment_text, created_at) VALUES ($1, $2, $3, NOW())',
+            [recipe_id, user_id, comment]
+        );
+        res.redirect('/recipes/' + recipe_id);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error adding comment");
+    }
+});
 
 
 
