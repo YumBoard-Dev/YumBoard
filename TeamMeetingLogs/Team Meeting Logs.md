@@ -23,7 +23,7 @@ Work will be due right before the TA meeting on Tuesdays.
 - Jaxon: Regex requirements for password
 - Aryaman: Figure out how to upload/store images 
 - Jose: 
-- Jason: 
+- Jason: Likes and Comments
 - Dresden: Displaying recipes on the home page
 
 
