@@ -26,18 +26,19 @@ CREATE TABLE IF NOT EXISTS users (
 -- Description : Stores recipe details created by users
 -------------------------------------------------
 
--- CREATE TABLE IF NOT EXISTS recipes (
---   recipe_id SERIAL PRIMARY KEY NOT NULL,
---   title VARCHAR(150) NOT NULL,
---   description TEXT,                                  -- Optional longer description of recipe/story of the recipe
---   instructions TEXT,                                 -- Step-by-step cooking instructions
---   ingredients TEXT,                                  -- Comma-separated ingredient list as text
---   created_by INT NOT NULL,                           -- FK to users table
---   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Time recipe was posted/created
---   public BOOLEAN DEFAULT TRUE,                       -- Whether the recipe is visible to others
---   image_url VARCHAR(300),                            -- Optional URL to an image of the recipe
---   FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE CASCADE
--- );
+CREATE TABLE IF NOT EXISTS recipes (
+  recipe_id SERIAL PRIMARY KEY NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  description TEXT,                                  -- Optional longer description of recipe/story of the recipe
+  instructions TEXT,                                 -- Step-by-step cooking instructions
+  ingredients TEXT,                                  -- Comma-separated ingredient list as text
+  duration VARCHAR(10),                              -- Time to make the recipe
+  created_by VARCHAR(100) NOT NULL,                   -- FK to users table (username)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Time recipe was posted/created
+  public BOOLEAN DEFAULT TRUE,                       -- Whether the recipe is visible to others
+  image_url VARCHAR(300),                            -- Optional URL to an image of the recipe
+  FOREIGN KEY (created_by) REFERENCES users(username) ON DELETE CASCADE
+);
 
 -- -------------------------------------------------
 -- -- User_to_Recipes Table
