@@ -16,6 +16,21 @@ const cookieParser = require('cookie-parser'); // To store very basic cookies, l
 const { error } = require('console');
 // const  cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
 
+
+const fs = require('fs');
+
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+fs.mkdirSync(uploadDir, { recursive: true });
+console.log('Created uploads directory');
+}
+
+// This allows serving static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
+
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
 // *****************************************************
@@ -49,6 +64,38 @@ db.connect()
     .catch(error => {
         console.log('ERROR:', error.message || error);
     });
+
+    const multer = require('multer');
+
+// Configure storage
+const storage = multer.diskStorage({
+destination: function(req, file, cb) {
+cb(null, 'uploads/'); // Destination folder
+},
+filename: function(req, file, cb) {
+// Create unique filename with original extension
+cb(null, Date.now() + '-' + file.originalname);
+}
+});
+
+// Set up file filter if you want to restrict file types
+const fileFilter = (req, file, cb) => {
+if (file.mimetype.startsWith('image/')) {
+cb(null, true);
+} else {
+cb(new Error('Not an image! Please upload only images.'), false);
+}
+};
+
+// Initialize upload middleware
+const upload = multer({
+storage: storage,
+limits: {
+fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
+},
+fileFilter: fileFilter
+});
+
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -353,7 +400,8 @@ app.get('/post_recipe', (req, res) => {
     })
 });
 
-app.post('/post_recipe', async (req, res) => {
+app.post('/post_recipe', upload.single('file'), async (req, res) => {
+    const username = req.session.username;
     var recipeName = req.body.recipeName;
     var description = req.body.description;
     var time = req.body.duration;
@@ -361,9 +409,10 @@ app.post('/post_recipe', async (req, res) => {
     var ingredients = req.body.ingredients;
     var privacy = req.body.privacy === "true";
     var postTime = Date.now();
+    var filePath = req.file ? req.file.path : null;
 
-    const insertQuery = 'INSERT INTO recipes (title, description, instructions, ingredients, created_at, public, created_by, duration) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *';
-    let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, req.session.userId, time]);
+    const insertQuery = 'INSERT INTO recipes (title, description, instructions, ingredients, created_at, public, created_by, duration, recipe_image) VALUES ($1, $2, $3, $4, TO_TIMESTAMP($5/1000), $6, $7, $8, $9) RETURNING *';
+    let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, req.session.userId, time, filePath]);
 
     res.json(insertConfirm);
 
