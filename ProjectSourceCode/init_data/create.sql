@@ -67,10 +67,11 @@ CREATE TABLE likes (
 -- Table for recipe comments
 CREATE TABLE comments (
     comment_id SERIAL PRIMARY KEY,
-    recipe_id INTEGER REFERENCES recipes(recipe_id),
-    user_id INTEGER REFERENCES users(user_id),
+    recipe_id INT REFERENCES recipes(recipe_id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
     comment_text TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT NOW(),
+    parent_comment_id INT REFERENCES comments(comment_id) ON DELETE CASCADE
 );
 
 -------------------------------------------------
