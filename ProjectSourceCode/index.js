@@ -412,7 +412,22 @@ app.post('/post_recipe', upload.single('file'), async (req, res) => {
     var filePath = req.file ? req.file.path : null;
 
     const insertQuery = 'INSERT INTO recipes (title, description, instructions, ingredients, created_at, public, created_by, duration, recipe_image) VALUES ($1, $2, $3, $4, TO_TIMESTAMP($5/1000), $6, $7, $8, $9) RETURNING *';
-    let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, req.session.userId, time, filePath]);
+    let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, username, time, filePath])
+    .then((data) => {
+        console.log("Recipe inserted successfully:", data);
+        res.status(200).redirect('/recipes/' + data.recipe_id);   
+    }
+    ).catch((error) => {
+        console.error("Error inserting recipe:", error);
+        res.render("pages/post_recipe", {
+            loggedIn: isLoggedIn(req),
+            //error: true,
+            //message: 'Error inserting recipe: ' + error.message,
+        });
+    }
+    );
+    console.log("Insert Confirm:", insertConfirm);
+    // res.status(200).json(insertConfirm);
 
     res.json(insertConfirm);
 

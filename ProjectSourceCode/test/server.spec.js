@@ -101,6 +101,40 @@ describe('Testing Login API', () => {
 });
 
 
+// ------------------- Post Recipe -------------------
+
+
+describe('Testing Post Recipe API', () => {
+  it('positive : /post_recipe', done => {
+    chai
+      .request(server)
+      .post('/login')
+      .send({ info: "info", info2: 10 })
+      .end((err, res) => {
+        res.should.have.status(302); // Expecting a redirect status code
+        res.should.be.html; // Expecting a HTML response
+        res.should.redirectTo(/^.*\/recipes.*$/);
+        done();
+      });
+  });
+
+  it('Negative : /post_recipe. Checking incomplete data posting', done => {
+    chai
+      .request(server)
+      .post('/post_recipe')
+      .send({ info: "info", info2: 10 })
+      .end((err, res) => {
+        expect(res).to.have.status(400); // Expecting a failure status code
+        res.should.be.html; // Expecting a HTML response
+        done();
+      });
+  });
+});
+
+
+
+
+
 
 // ------------------- Logout -------------------
 
