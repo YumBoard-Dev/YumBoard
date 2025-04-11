@@ -415,21 +415,21 @@ app.post('/post_recipe', upload.single('file'), async (req, res) => {
     let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, username, time, filePath])
     .then((data) => {
         console.log("Recipe inserted successfully:", data);
-        res.status(200).redirect('/recipes/' + data.recipe_id);   
+        res.status(302).redirect('/recipes/' + data.recipe_id);   
     }
     ).catch((error) => {
         console.error("Error inserting recipe:", error);
-        res.render("pages/post_recipe", {
+        res.status(400).render("pages/post_recipe", {
             loggedIn: isLoggedIn(req),
-            //error: true,
-            //message: 'Error inserting recipe: ' + error.message,
+            error: true,
+            message: 'Error inserting recipe: ' + error.message,
         });
     }
     );
     console.log("Insert Confirm:", insertConfirm);
     // res.status(200).json(insertConfirm);
 
-    res.json(insertConfirm);
+    //res.json(insertConfirm);
 
     // res.render("pages/post_recipe", {
     //     recipeName: recipeName,

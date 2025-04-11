@@ -108,10 +108,10 @@ describe('Testing Post Recipe API', () => {
   it('positive : /post_recipe', done => {
     chai
       .request(server)
-      .post('/login')
-      .send({ info: "info", info2: 10 })
+      .post('/post_recipe')
+      .send({ recipeName: "Example Name", description: "Recipe Description", duration: "11:11", instructions: "Recipe Instructions", ingredients: "Recipe, Ingredients", privacy: "true" })
       .end((err, res) => {
-        res.should.have.status(302); // Expecting a redirect status code
+        res.should.have.status(200); // Expecting a redirect status code
         res.should.be.html; // Expecting a HTML response
         res.should.redirectTo(/^.*\/recipes.*$/);
         done();
@@ -122,7 +122,7 @@ describe('Testing Post Recipe API', () => {
     chai
       .request(server)
       .post('/post_recipe')
-      .send({ info: "info", info2: 10 })
+      .send({ recipeName: 10, duration: "11:11", instructions: "Recipe Instructions", ingredients: "Recipe, Ingredients", privacy: "true" })
       .end((err, res) => {
         expect(res).to.have.status(400); // Expecting a failure status code
         res.should.be.html; // Expecting a HTML response
