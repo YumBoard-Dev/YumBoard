@@ -42,7 +42,7 @@
         {{#each comments}}
             <li class="list-group-item">
                 <strong>{{username}}</strong> said: {{comment_text}}<br>
-                <small class="text-muted">{{created_at}}</small>
+                <small class="text-muted created-at" data-timestamp="{{created_at}}">{{created_at}}</small>
 
                 {{!-- Replies to this comment --}}
                 {{#with (lookup ../repliesMap comment_id) as |replies|}}
@@ -50,7 +50,7 @@
                         {{#each replies}}
                             <li class="list-group-item ms-3">
                                 <strong>{{username}}</strong> replied: {{comment_text}}<br>
-                                <small class="text-muted">{{created_at}}</small>
+                                <small class="text-muted created-at" data-timestamp="{{created_at}}">{{created_at}}</small>
                             </li>
                         {{/each}}
                     </ul>
@@ -75,3 +75,13 @@
         <button type="submit" class="btn btn-secondary">Post Comment</button>
     </form>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const timestamps = document.querySelectorAll(".created-at");
+        timestamps.forEach(timestamp => {
+            const utcDate = new Date(timestamp.dataset.timestamp);
+            timestamp.textContent = utcDate.toLocaleString();
+        });
+    });
+</script>
