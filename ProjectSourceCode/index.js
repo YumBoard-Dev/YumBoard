@@ -400,7 +400,7 @@ app.get('/post_recipe', (req, res) => {
     })
 });
 
-app.post('/post_recipe', upload.single('file'), async (req, res) => {
+app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
     const username = req.session.username;
     var recipeName = req.body.recipeName;
     var description = req.body.description;
@@ -410,9 +410,10 @@ app.post('/post_recipe', upload.single('file'), async (req, res) => {
     var privacy = req.body.privacy === "true";
     var postTime = Date.now();
     var filePath = req.file ? req.file.path : null;
+    // console.log(req.imageUpload.path);
 
-    const insertQuery = 'INSERT INTO recipes (title, description, instructions, ingredients, created_at, public, created_by, duration, recipe_image) VALUES ($1, $2, $3, $4, TO_TIMESTAMP($5/1000), $6, $7, $8, $9) RETURNING *';
-    let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, req.session.userId, time, filePath]);
+    const insertQuery = 'INSERT INTO recipes (title, description, instructions, ingredients, created_at, public, duration, recipe_image) VALUES ($1, $2, $3, $4, TO_TIMESTAMP($5/1000), $6, $7, $8) RETURNING *';
+    let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, time, filePath]);
 
     res.json(insertConfirm);
 
