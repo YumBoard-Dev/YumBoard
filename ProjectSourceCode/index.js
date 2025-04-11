@@ -193,9 +193,9 @@ app.get('/', async (req, res) => {
 });
 
 
+    
 
-
-
+    
 
 
 
@@ -303,16 +303,8 @@ app.post('/register', async (req, res) => {
             [username, hashedPassword]
         );
 
-
-        // Get User ID to log in
-        let user = await db.one(
-            'SELECT user_id, username, password FROM users WHERE username = $1',
-            [username]
-        );
-
         // Set session
-        req.session.userId = user.user_id;
-        req.session.username = user.username;
+        req.session.username = username;
 
         // Save session and wait for completion
         await new Promise((resolve, reject) => {
@@ -324,11 +316,10 @@ app.post('/register', async (req, res) => {
                     resolve();
                 }
             });
-        }).then(() => {
-            console.log('User registered successfully:', username);
-            return res.status(200).redirect('/');
         });
 
+        console.log('User registered successfully:', username);
+        return res.redirect('/');
 
     } catch (error) {
         console.error(error);
@@ -371,6 +362,34 @@ app.post('/post_recipe', (req, res) => {
         error: false,
     });
 })
+
+// ------------------- Profile Page -------------------
+app.get('/profile', async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
+
+    try {
+        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+
+        res.render("pages/profile", {
+            loggedIn: true,
+            user: {
+                username: user.username,
+                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
+            },
+            username: user.username
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error retrieving profile information");
+    }
+});
+
 
 // ------------------- Logout -------------------
 
@@ -427,7 +446,6 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             repliesMap,
             loggedIn: isLoggedIn(req),
             username: req.session.username,
-            liked_by_user: false, // TODO Query whether this user liked it or not
         });
 
     } catch (err) {
@@ -436,26 +454,6 @@ app.get('/recipes/:recipe_id', async (req, res) => {
     }
 });
 
-
-
-
-
-
-
-
-// ------------------------------ Authentication Required From Here Onwards ------------------------------
-
-// Authentication Middleware.
-const auth = (req, res, next) => {
-    if (!req.session.username) {
-        // Default to login page.
-        return res.redirect('/login');
-    }
-    next();
-};
-
-// Authentication Required
-app.use(auth);
 
 //like/unlike recipe
 app.post('/recipes/:recipe_id/like', async (req, res) => {
@@ -532,12 +530,6 @@ app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
     }
 });
 
-
-app.get('/list', (req, res) => {
-    res.render("pages/grocery_list", {
-        loggedIn: isLoggedIn(req),
-    });
-});
 
 
 // starting the server and keeping the connection open to listen for more requests
