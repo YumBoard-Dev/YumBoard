@@ -390,6 +390,13 @@ app.get('/recipes/:recipe_id', async (req, res) => {
 
         const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
 
+        const likedByUser = req.session.userId
+            ? await db.oneOrNone(
+                  'SELECT 1 FROM likes WHERE recipe_id = $1 AND user_id = $2',
+                  [recipe_id, req.session.userId]
+              )
+            : null;
+
         const comments = await db.any(`
             SELECT c.*, u.username 
             FROM comments c 
@@ -414,6 +421,7 @@ app.get('/recipes/:recipe_id', async (req, res) => {
         res.render('pages/recipe', {
             recipe,
             likes: likesCount.count,
+            liked_by_user: !!likedByUser, // Ensure this is passed to the template
             comments: rootComments,
             repliesMap,
             loggedIn: isLoggedIn(req),
