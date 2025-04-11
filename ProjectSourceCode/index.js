@@ -415,7 +415,7 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
     const insertQuery = 'INSERT INTO recipes (title, description, instructions, ingredients, created_at, public, duration, recipe_image) VALUES ($1, $2, $3, $4, TO_TIMESTAMP($5/1000), $6, $7, $8) RETURNING *';
     let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, time, filePath]);
 
-    res.json(insertConfirm);
+    //res.json(insertConfirm);
 
     // res.render("pages/post_recipe", {
     //     recipeName: recipeName,
