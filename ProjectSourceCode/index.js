@@ -418,6 +418,7 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             repliesMap,
             loggedIn: isLoggedIn(req),
             username: req.session.username,
+            liked_by_user: false, // TODO Query whether this user liked it or not
         });
 
     } catch (err) {

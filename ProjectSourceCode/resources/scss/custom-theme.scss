@@ -1,4 +1,5 @@
 $primary: #85c12b;
+$modal-fade-transform: scale(.8);
 
 @import "../../node_modules/bootstrap/scss/bootstrap";
 
@@ -23,4 +24,5 @@ $primary: #85c12b;
     
     color: shade-color($secondary, 20%);
 }
+
 
