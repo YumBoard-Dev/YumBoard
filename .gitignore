@@ -2,6 +2,7 @@
 ProjectSourceCode/node_modules/
 ProjectSourceCode/.env
 .obsidian/
+.DS_Store
 
 # It is highly recommended by NPM to commit package-lock.json, in contrast to what the docs for this class say:
 # https://docs.npmjs.com/cli/v6/configuring-npm/package-locks#using-locked-packages
