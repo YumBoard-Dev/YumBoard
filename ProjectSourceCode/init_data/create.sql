@@ -33,11 +33,11 @@ CREATE TABLE IF NOT EXISTS recipes (
   instructions TEXT,                                 -- Step-by-step cooking instructions
   ingredients TEXT,                                  -- Comma-separated ingredient list as text
   duration VARCHAR(10),                              -- Time to make the recipe
-  -- created_by VARCHAR(100) NOT NULL,                   -- FK to users table (username)
+  created_by VARCHAR(100) NOT NULL,                   -- FK to users table (username)
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Time recipe was posted/created
   public BOOLEAN DEFAULT TRUE,                       -- Whether the recipe is visible to others
-  recipe_image VARCHAR(300)                           -- Optional URL to an image of the recipe
-  -- FOREIGN KEY (created_by) REFERENCES users(username) ON DELETE CASCADE
+  recipe_image VARCHAR(300),                           -- Optional URL to an image of the recipe
+  FOREIGN KEY (created_by) REFERENCES users(username) ON DELETE CASCADE
 );
 
 -- -------------------------------------------------
