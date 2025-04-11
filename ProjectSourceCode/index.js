@@ -91,6 +91,10 @@ Handlebars.registerHelper("getCommaDelimitedCount", function (text) {
     return new Handlebars.SafeString(result);
 });
 
+Handlebars.registerHelper('lookup', function (obj, field) {
+    return obj && obj[field];
+});
+
 // *****************************************************
 // <!-- Section 4 : API Routes -->
 // *****************************************************
@@ -359,6 +363,34 @@ app.post('/post_recipe', (req, res) => {
     });
 })
 
+// ------------------- Profile Page -------------------
+app.get('/profile', async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
+
+    try {
+        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+
+        res.render("pages/profile", {
+            loggedIn: true,
+            user: {
+                username: user.username,
+                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
+            },
+            username: user.username
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error retrieving profile information");
+    }
+});
+
+
 // ------------------- Logout -------------------
 
 app.get('/logout', (req, res) => {
@@ -380,20 +412,42 @@ app.get('/logout', (req, res) => {
 //display recipe with likes and comments
 app.get('/recipes/:recipe_id', async (req, res) => {
     const recipe_id = req.params.recipe_id;
+
     try {
         const recipe = await db.one('SELECT * FROM recipes WHERE recipe_id = $1', [recipe_id]);
+
         const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
-        const comments = await db.any(
-            'SELECT c.*, u.username FROM comments c JOIN users u ON c.user_id = u.user_id WHERE recipe_id = $1 ORDER BY created_at ASC',
-            [recipe_id]
-        );
+
+        const comments = await db.any(`
+            SELECT c.*, u.username 
+            FROM comments c 
+            JOIN users u ON c.user_id = u.user_id 
+            WHERE recipe_id = $1 
+            ORDER BY created_at ASC
+        `, [recipe_id]);
+
+        // Separate top-level comments from replies
+        const rootComments = comments.filter(c => !c.parent_comment_id);
+        const replies = comments.filter(c => c.parent_comment_id);
+
+        // Group replies by parent_comment_id
+        const repliesMap = {};
+        replies.forEach(reply => {
+            if (!repliesMap[reply.parent_comment_id]) {
+                repliesMap[reply.parent_comment_id] = [];
+            }
+            repliesMap[reply.parent_comment_id].push(reply);
+        });
+
         res.render('pages/recipe', {
             recipe,
-            likes: likesCount.count,  // note: count might be a string so convert if needed
-            comments,
+            likes: likesCount.count,
+            comments: rootComments,
+            repliesMap,
             loggedIn: isLoggedIn(req),
             username: req.session.username,
         });
+
     } catch (err) {
         console.error(err);
         res.status(500).send("Error retrieving recipe");
@@ -449,6 +503,30 @@ app.post('/recipes/:recipe_id/comments', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send("Error adding comment");
+    }
+});
+
+//reply to comments
+app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
+    if (!isLoggedIn(req)) return res.status(401).send("Unauthorized");
+
+    const recipe_id = req.params.recipe_id;
+    const parent_comment_id = req.params.comment_id;
+    const user_id = req.session.userId;
+    const { reply } = req.body;
+
+    if (!reply) return res.status(400).send("Reply is required");
+
+    try {
+        await db.none(`
+            INSERT INTO comments (recipe_id, user_id, comment_text, parent_comment_id, created_at)
+            VALUES ($1, $2, $3, $4, NOW())
+        `, [recipe_id, user_id, reply, parent_comment_id]);
+
+        res.redirect('/recipes/' + recipe_id);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error adding reply");
     }
 });
 

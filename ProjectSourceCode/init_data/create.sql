@@ -6,6 +6,8 @@ DROP TABLE IF EXISTS grocery_carts CASCADE;
 DROP TABLE IF EXISTS cart_ingredients CASCADE;
 DROP TABLE IF EXISTS recipe_tags CASCADE;
 DROP TABLE IF EXISTS recipe_to_tags CASCADE;
+DROP TABLE IF EXISTS likes CASCADE;
+DROP TABLE IF EXISTS comments CASCADE;
 
 -------------------------------------------------
 -- Users Table
@@ -57,7 +59,7 @@ CREATE TABLE IF NOT EXISTS recipes (
 -- Description : Stores likes created by users
 -------------------------------------------------
 
-CREATE TABLE likes (
+CREATE TABLE IF NOT EXISTS likes (
     like_id SERIAL PRIMARY KEY,
     recipe_id INTEGER REFERENCES recipes(recipe_id),
     user_id INTEGER REFERENCES users(user_id),
@@ -65,12 +67,13 @@ CREATE TABLE likes (
 );
 
 -- Table for recipe comments
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
     comment_id SERIAL PRIMARY KEY,
-    recipe_id INTEGER REFERENCES recipes(recipe_id),
-    user_id INTEGER REFERENCES users(user_id),
+    recipe_id INT REFERENCES recipes(recipe_id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
     comment_text TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT NOW(),
+    parent_comment_id INT REFERENCES comments(comment_id) ON DELETE CASCADE
 );
 
 -------------------------------------------------

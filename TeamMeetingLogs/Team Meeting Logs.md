@@ -22,7 +22,7 @@ Work will be due right before the TA meeting on Tuesdays.
 
 - Jaxon: Regex requirements for password
 - Aryaman: Figure out how to upload/store images 
-- Jose: 
+- Jose: Start working on the User profile page
 - Jason: Likes and Comments
 - Dresden: Displaying recipes on the home page
 
@@ -31,7 +31,11 @@ Work will be due right before the TA meeting on Tuesdays.
 
 # April 8th
 
-- 
+- Login/Registration and tests are done
+- Likes & Comments are done
+- Jose was sick, going to work on more now
+- Dresden got assigned shopping list
+- Just do your work, get commits in by Thursday. 
 
 
 

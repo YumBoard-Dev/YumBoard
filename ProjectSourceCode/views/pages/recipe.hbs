@@ -4,24 +4,16 @@
       font-size: 1.5rem;
       transition: transform 0.2s ease, color 0.2s ease;
   }
-
-  /* Unliked state: red outline */
   .heart-toggle.outline i {
       color: red;
   }
-
-  /* Unliked hover state: dark red */
   .heart-toggle.outline:hover i {
       color: darkred;
       transform: scale(1.2);
   }
-
-  /* Liked state: filled heart in red */
   .heart-toggle.filled i {
       color: red;
   }
-
-  /* Optional: slight scale even when liked */
   .heart-toggle.filled:hover i {
       transform: scale(1.2);
   }
@@ -32,7 +24,7 @@
     <img src="{{recipe.image_url}}" alt="{{recipe.title}}" class="img-fluid">
     <p>{{recipe.description}}</p>
     
-    <!-- Display like count and a toggling heart icon -->
+    <!-- Like Count & Toggle -->
     <p>Likes: {{likes}}</p>
     <form action="/recipes/{{recipe.recipe_id}}/like" method="post" style="display: inline;">
         <button type="submit" class="btn btn-link p-0 heart-toggle {{#if liked_by_user}}filled{{else}}outline{{/if}}">
@@ -44,18 +36,38 @@
         </button>
     </form>
 
-    <!-- Display Comments -->
+    <!-- Comments Section -->
     <h2 class="mt-4">Comments</h2>
     <ul class="list-group mb-3">
         {{#each comments}}
             <li class="list-group-item">
                 <strong>{{username}}</strong> said: {{comment_text}}<br>
                 <small class="text-muted">{{created_at}}</small>
+
+                {{!-- Replies to this comment --}}
+                {{#with (lookup ../repliesMap comment_id) as |replies|}}
+                    <ul class="list-group mt-2">
+                        {{#each replies}}
+                            <li class="list-group-item ms-3">
+                                <strong>{{username}}</strong> replied: {{comment_text}}<br>
+                                <small class="text-muted">{{created_at}}</small>
+                            </li>
+                        {{/each}}
+                    </ul>
+                {{/with}}
+
+                {{!-- Reply Form --}}
+                <form action="/recipes/{{../recipe.recipe_id}}/comments/{{comment_id}}/reply" method="post" class="mt-2">
+                    <div class="mb-2">
+                        <textarea name="reply" class="form-control" rows="2" placeholder="Write a reply..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Reply</button>
+                </form>
             </li>
         {{/each}}
     </ul>
 
-    <!-- Comment Form -->
+    <!-- Add New Comment -->
     <form action="/recipes/{{recipe.recipe_id}}/comments" method="post">
         <div class="mb-3">
             <textarea name="comment" class="form-control" rows="3" placeholder="Add a comment..." required></textarea>
