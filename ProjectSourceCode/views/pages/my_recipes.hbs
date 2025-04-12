@@ -1,0 +1,28 @@
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Title</th>
+      <th>Ingredients</th>
+      <th>Instructions</th>
+      <th>Add</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each recipes}}
+    <tr>
+      <td>{{recipe_id}}</td>
+      <td>{{title}}</td>
+      <td>{{ingredients}}</td>
+      <td>{{instructions}}</td>
+      <td>
+        <form action="/recipes/select" method="POST">
+          <input type="hidden" name="recipe_id" value="{{recipe_id}}">
+          <input type="submit" value="Select"
+            {{#if selected}}disabled{{/if}}>
+        </form>
+      </td>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>
