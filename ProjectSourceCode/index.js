@@ -14,6 +14,22 @@ const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 const cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
 const { error } = require('console');
+// const  cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
+
+
+const fs = require('fs');
+
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+fs.mkdirSync(uploadDir, { recursive: true });
+console.log('Created uploads directory');
+}
+
+// This allows serving static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -48,6 +64,38 @@ db.connect()
     .catch(error => {
         console.log('ERROR:', error.message || error);
     });
+
+    const multer = require('multer');
+
+// Configure storage
+const storage = multer.diskStorage({
+destination: function(req, file, cb) {
+cb(null, 'uploads/'); // Destination folder
+},
+filename: function(req, file, cb) {
+// Create unique filename with original extension
+cb(null, Date.now() + '-' + file.originalname);
+}
+});
+
+// Set up file filter if you want to restrict file types
+const fileFilter = (req, file, cb) => {
+if (file.mimetype.startsWith('image/')) {
+cb(null, true);
+} else {
+cb(new Error('Not an image! Please upload only images.'), false);
+}
+};
+
+// Initialize upload middleware
+const upload = multer({
+storage: storage,
+limits: {
+fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
+},
+fileFilter: fileFilter
+});
+
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -90,6 +138,14 @@ Handlebars.registerHelper("getCommaDelimitedCount", function (text) {
     var result = text.split(",").length;
     return new Handlebars.SafeString(result);
 });
+app.use(cookieParser()); // To use cookies
+
+
+
+Handlebars.registerHelper("getCommaDelimitedCount", function(text) {
+    var result = text.split(",").length;
+    return new Handlebars.SafeString(result);
+  });
 
 Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
@@ -98,6 +154,7 @@ Handlebars.registerHelper('lookup', function (obj, field) {
 // *****************************************************
 // <!-- Section 4 : API Routes -->
 // *****************************************************
+
 
 const exampleRecipes = [{
     "recipe_id": 1234,
@@ -110,7 +167,7 @@ const exampleRecipes = [{
     "created_at": "2023-10-01T12:00:00Z",
     "public": true,
     "image_url": "/static/images/placeholders/placeholder_meal.png"
-}, {
+},{
     "recipe_id": 1235,
     "title": "Vegan Buddha Bowl",
     "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
@@ -122,6 +179,39 @@ const exampleRecipes = [{
     "public": true,
     "image_url": "/static/images/placeholders/placeholder_meal.png"
 }];
+
+
+
+
+var isLoggedIn = () => {
+    return true; // TODO make this dependent on whether or not user is actually logged in
+}
+
+
+
+// const exampleRecipes = [{
+//     "recipe_id": 1234,
+//     "title": "Spaghetti Bolognese",
+//     "description": "A classic Italian pasta dish with a rich meat sauce.",
+//     // Instructions are in a string separated by "|"                             
+//     "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
+//     "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
+//     "created_by": "123457",
+//     "created_at": "2023-10-01T12:00:00Z",
+//     "public": true,
+//     "image_url": "/static/images/placeholders/placeholder_meal.png"
+// }, {
+//     "recipe_id": 1235,
+//     "title": "Vegan Buddha Bowl",
+//     "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
+//     // Instructions are in a string separated by "|"                             
+//     "instructions": "Cook quinoa according to package instructions. | Roast your choice of vegetables (e.g., sweet potatoes, broccoli, bell peppers) in the oven. | Prepare a tahini dressing by mixing tahini, lemon juice, garlic, and water. | Assemble the bowl with quinoa, roasted vegetables, and drizzle with tahini dressing.",
+//     "ingredients": "quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic",
+//     "created_by": "123456",
+//     "created_at": "2023-10-02T12:00:00Z",
+//     "public": true,
+//     "image_url": "/static/images/placeholders/placeholder_meal.png"
+// }];
 
 function isLoggedIn(req) {
     return req.session && req.session.userId;
@@ -346,21 +436,32 @@ app.get('/post_recipe', (req, res) => {
     })
 });
 
-app.post('/post_recipe', (req, res) => {
+app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
+    const username = req.session.username;
     var recipeName = req.body.recipeName;
     var description = req.body.description;
     var time = req.body.duration;
     var instructions = req.body.instructions;
+    var ingredients = req.body.ingredients;
+    var privacy = req.body.privacy === "true";
+    var postTime = Date.now();
+    var filePath = req.file ? req.file.path : null;
+    // console.log(req.imageUpload.path);
 
-    res.render("pages/post_recipe", {
-        recipeName: recipeName,
-        description: description,
-        time: time,
-        instructions: instructions,
-        loggedIn: isLoggedIn(req),
-        message: "Recipe posted successfully! Name: " + recipeName,
-        error: false,
-    });
+    const insertQuery = 'INSERT INTO recipes (title, description, instructions, ingredients, created_at, public, duration, recipe_image) VALUES ($1, $2, $3, $4, TO_TIMESTAMP($5/1000), $6, $7, $8) RETURNING *';
+    let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, time, filePath]);
+
+    //res.json(insertConfirm);
+
+    // res.render("pages/post_recipe", {
+    //     recipeName: recipeName,
+    //     description: description,
+    //     time: time,
+    //     instructions: instructions,
+    //     loggedIn: isLoggedIn(req),
+    //     message: "Recipe posted successfully! Name: " + recipeName,
+    //     error: false,
+    // });
 })
 
 // ------------------- Profile Page -------------------
