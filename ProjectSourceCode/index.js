@@ -296,9 +296,19 @@ app.post('/register', async (req, res) => {
             'INSERT INTO users (username, password) VALUES ($1, $2)',
             [username, hashedPassword]
         );
+    
+
+    
+        // Get User ID to log in
+        let user = await db.one(
+            'SELECT user_id, username, password FROM users WHERE username = $1',
+            [username]
+        );
+
 
         // Set session
-        req.session.username = username;
+        req.session.userId = user.user_id;
+        req.session.username = user.username;
 
         // Save session and wait for completion
         await new Promise((resolve, reject) => {
@@ -310,10 +320,10 @@ app.post('/register', async (req, res) => {
                     resolve();
                 }
             });
+        }).then(() => {
+            console.log('User registered successfully:', username);
+            return res.status(200).redirect('/');
         });
-
-        console.log('User registered successfully:', username);
-        return res.redirect('/');
 
     } catch (error) {
         console.error(error);
@@ -371,7 +381,7 @@ app.get('/profile', async (req, res) => {
         }
 
         res.render("pages/profile", {
-            loggedIn: true,
+            loggedIn: isLoggedIn(req),
             user: {
                 username: user.username,
                 profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
@@ -523,6 +533,15 @@ app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
         res.status(500).send("Error adding reply");
     }
 });
+
+
+app.get('/list', (req, res) => {
+    res.render("pages/grocery_list", {
+        loggedIn: isLoggedIn(req),
+    });
+});
+ 
+
 
 
 // starting the server and keeping the connection open to listen for more requests
