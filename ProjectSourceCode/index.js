@@ -193,12 +193,6 @@ app.get('/', async (req, res) => {
 });
 
 
-    
-
-    
-
-
-
 // ------------------- Login -------------------
 
 app.get('/login', (req, res) => {
@@ -529,7 +523,6 @@ app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
         res.status(500).send("Error adding reply");
     }
 });
-
 
 
 // starting the server and keeping the connection open to listen for more requests
