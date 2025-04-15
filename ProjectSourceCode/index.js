@@ -340,22 +340,39 @@ app.get('/post_recipe', (req, res) => {
     })
 });
 
-app.post('/post_recipe', (req, res) => {
-    var recipeName = req.body.recipeName;
-    var description = req.body.description;
-    var time = req.body.duration;
-    var instructions = req.body.instructions;
+app.post('/post_recipe', async (req, res) => {
+    const { recipeName, description, duration, instructions, tags } = req.body;
 
-    res.render("pages/post_recipe", {
-        recipeName: recipeName,
-        description: description,
-        time: time,
-        instructions: instructions,
-        loggedIn: isLoggedIn(req),
-        message: "Recipe posted successfully! Name: " + recipeName,
-        error: false,
-    });
-})
+    try {
+        // Insert the recipe into the database
+        const recipe = await db.one(
+            `INSERT INTO recipes (title, description, instructions, created_by, public, created_at)
+             VALUES ($1, $2, $3, $4, TRUE, NOW()) RETURNING recipe_id`,
+            [recipeName, description, instructions, req.session.userId]
+        );
+
+        // Process tags
+        if (tags) {
+            const tagList = tags.split(',').map(tag => tag.trim().toLowerCase());
+            for (const tag of tagList) {
+                const tagId = await db.one(
+                    `INSERT INTO recipe_tags (name) VALUES ($1)
+                     ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING tag_id`,
+                    [tag]
+                );
+                await db.none(
+                    `INSERT INTO recipe_to_tags (recipe_id, tag_id) VALUES ($1, $2)`,
+                    [recipe.recipe_id, tagId.tag_id]
+                );
+            }
+        }
+
+        res.redirect(`/recipes/${recipe.recipe_id}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error posting recipe");
+    }
+});
 
 // ------------------- Profile Page -------------------
 app.get('/profile', async (req, res) => {
@@ -410,6 +427,13 @@ app.get('/recipes/:recipe_id', async (req, res) => {
     try {
         const recipe = await db.one('SELECT * FROM recipes WHERE recipe_id = $1', [recipe_id]);
 
+        const tags = await db.any(
+            `SELECT t.name FROM recipe_tags t
+             JOIN recipe_to_tags rt ON t.tag_id = rt.tag_id
+             WHERE rt.recipe_id = $1`,
+            [recipe_id]
+        );
+
         const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
 
         const comments = await db.any(`
@@ -435,6 +459,7 @@ app.get('/recipes/:recipe_id', async (req, res) => {
 
         res.render('pages/recipe', {
             recipe,
+            tags: tags.map(tag => tag.name),
             likes: likesCount.count,
             comments: rootComments,
             repliesMap,

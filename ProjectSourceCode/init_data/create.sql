@@ -152,22 +152,22 @@ VALUES
 -- -- Description : Stores dietary or allergen tags like 'vegan', 'gluten-free', etc.
 -- -------------------------------------------------
 
--- CREATE TABLE IF NOT EXISTS recipe_tags (
---   tag_id SERIAL PRIMARY KEY NOT NULL,
---   name VARCHAR(50) NOT NULL UNIQUE                   -- Tag name, must be unique
--- );
+CREATE TABLE IF NOT EXISTS recipe_tags (
+    tag_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
 
 -- -------------------------------------------------
 -- -- Recipe Tag Assignments Table
 -- -- Description : Join table connecting recipes to tags
 -- -------------------------------------------------
 
--- CREATE TABLE IF NOT EXISTS recipe_to_tags (
---   recipe_id INT NOT NULL,                            -- FK to recipes
---   tag_id INT NOT NULL,                               -- FK to recipe_tags
---   PRIMARY KEY (recipe_id, tag_id),                   -- Composite PK: one tag per recipe
---   FOREIGN KEY (recipe_id) REFERENCES recipes(recipe_id) ON DELETE CASCADE,
---   FOREIGN KEY (tag_id) REFERENCES recipe_tags(tag_id) ON DELETE CASCADE
--- );
+CREATE TABLE IF NOT EXISTS recipe_to_tags (
+    recipe_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    PRIMARY KEY (recipe_id, tag_id),
+    FOREIGN KEY (recipe_id) REFERENCES recipes(recipe_id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES recipe_tags(tag_id) ON DELETE CASCADE
+);
 
 

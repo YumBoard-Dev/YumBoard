@@ -28,12 +28,20 @@
         <h1>{{recipe.title}}</h1>
     </div>
 
-
     <div class="card-body">
         <img src="{{recipe.image_url}}" alt="{{recipe.title}}" class="card-img-top recipe-card-image">
         <div class="m-3">
             <p>{{recipe.description}}</p>
 
+            <!-- Tags Section -->
+            <div class="row p-2 justify-content-center">
+                <h4>Tags</h4>
+                <ul>
+                    {{#each tags}}
+                        <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
 
             <!-- Like Count & Toggle -->
             <p>Likes: {{likes}}</p>
