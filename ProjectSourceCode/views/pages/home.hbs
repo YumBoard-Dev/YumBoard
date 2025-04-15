@@ -15,6 +15,8 @@
                     <div class="row">
                         <div class="col">
                             <p>{{getCommaDelimitedCount ingredients}} Ingredients</p>
+                            <p>Likes: {{like_count}}</p>
+                            <!-- Removed Heart Button -->
                             <a href="/recipes/{{recipe_id}}" class="btn btn-primary">View Recipe</a>
                         </div>
                         <div class="col">
@@ -23,15 +25,14 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
-
     </div>
     {{/each}}
 
     {{> filtersFloatingButton }}
 </div>
+
 
 
 
