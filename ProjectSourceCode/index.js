@@ -296,14 +296,18 @@ app.post('/register', async (req, res) => {
             'INSERT INTO users (username, password) VALUES ($1, $2)',
             [username, hashedPassword]
         );
-    
 
-    
         // Get User ID to log in
-        let user = await db.one(
+        let user = await db.one( // TODO Might be able to get normal insert to return the user entry
             'SELECT user_id, username, password FROM users WHERE username = $1',
             [username]
         );
+        
+        await db.none(
+            'INSERT INTO grocery_lists (user_id) VALUES ($1)',
+            [user.user_id]
+        );
+
 
 
         // Set session
@@ -459,6 +463,23 @@ app.get('/recipes/:recipe_id', async (req, res) => {
 });
 
 
+
+
+// ------------------------------ Authentication Required From Here Onwards ------------------------------
+
+// Authentication Middleware.
+const auth = (req, res, next) => {
+    if (!req.session.userId) {
+        // Default to login page.
+        return res.redirect('/login');
+    }
+    next();
+};
+
+// Authentication Required
+app.use(auth);
+
+
 //like/unlike recipe
 app.post('/recipes/:recipe_id/like', async (req, res) => {
     if (!isLoggedIn(req)) {
@@ -535,10 +556,123 @@ app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
 });
 
 
-app.get('/list', (req, res) => {
-    res.render("pages/grocery_list", {
-        loggedIn: isLoggedIn(req),
-    });
+app.get('/list', async (req, res) => {
+
+    try {
+
+        const list_id = await db.one(
+            'SELECT list_id FROM grocery_lists WHERE user_id = $1',
+            [req.session.userId]
+        );
+
+
+        const ingredients = await db.any(
+            'SELECT ingredient_text, cost FROM list_ingredients WHERE list_id = $1',
+            [list_id.list_id]
+        );
+
+        res.status(200).render("pages/grocery_list", {
+            loggedIn: isLoggedIn(req),
+            ingredients: ingredients
+        });
+
+
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/grocery_list", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving grocery list',
+        });
+    }
+
+
+    // res.render("pages/grocery_list", {
+    //     loggedIn: isLoggedIn(req),
+    // });
+});
+
+
+app.post('/list/addItem', async (req, res) => {
+
+    try {
+
+        const list_id = await db.one(
+            'SELECT list_id FROM grocery_lists WHERE user_id = $1',
+            [req.session.userId]
+        );
+
+        const ingredientName = req.body.ingredient;
+
+        // TODO Query Kroger API and find the price of the ingredient
+        // For now, let's just set it to 0.00
+
+        const ingredients = await db.any(
+            'SELECT ingredient_text, cost FROM list_ingredients WHERE list_id = $1',
+            [list_id.list_id]
+        );
+
+        // TODO Make sure the ingredient_text is unique and not already in the list
+        const price = 0.00;
+
+        await db.none(`INSERT INTO list_ingredients (list_id, ingredient_text, cost) VALUES($1, $2, $3)`, [list_id.list_id, ingredientName, price]);
+
+
+
+
+        // res.status(200).render("pages/grocery_list", {
+        //     loggedIn: isLoggedIn(req),
+        //     ingredients: ingredients
+        // });
+        res.status(200).redirect('/list');
+
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/grocery_list", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving grocery list',
+        });
+    }
+
+    
+});
+
+
+app.post('/list/removeItem', async (req, res) => {
+
+    try {
+
+        const list_id = await db.one(
+            'SELECT list_id FROM grocery_lists WHERE user_id = $1',
+            [req.session.userId]
+        );
+
+        const ingredientName = req.body.ingredient_text;
+        console.log(ingredientName);
+
+        await db.none(`DELETE FROM list_ingredients WHERE list_id = $1 AND ingredient_text = $2`, [list_id.list_id, ingredientName]);
+
+
+        // res.status(200).render("pages/grocery_list", {
+        //     loggedIn: isLoggedIn(req),
+        //     ingredients: ingredients
+        // });
+        res.status(200).redirect('/list');
+
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/grocery_list", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving grocery list',
+        });
+    }
+
+    
 });
  
 
