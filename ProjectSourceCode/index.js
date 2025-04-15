@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 // *****************************************************
 // <!-- Section 1 : Import Dependencies -->
 // *****************************************************
@@ -126,6 +128,56 @@ const exampleRecipes = [{
 function isLoggedIn(req) {
     return req.session && req.session.userId;
 }
+
+
+const qs = require('qs'); 
+
+async function getKrogerToken() {
+    try {
+      const data = qs.stringify({
+        grant_type: 'client_credentials',
+        scope: 'product.compact' // stick with compact for now
+      });
+  
+      const res = await axios.post('https://api.kroger.com/v1/connect/oauth2/token', data, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        auth: {
+          username: process.env.KROGER_CLIENT_ID,
+          password: process.env.KROGER_CLIENT_SECRET
+        }
+      });
+  
+      return res.data.access_token;
+  
+    } catch (err) {
+      console.error('❌ Failed to get token:', err.response?.data || err.message);
+      console.error('❓ Used ID:', process.env.KROGER_CLIENT_ID);
+      return null;
+    }
+  }
+
+async function getKrogerLocation(zip, token) {
+  const res = await axios.get('https://api.kroger.com/v1/locations', {
+    headers: { Authorization: `Bearer ${token}` },
+    params: { 'filter.zipCode': zip, 'filter.limit': 1 }
+  });
+
+  return res.data.data[0]?.locationId;
+}
+
+async function getIngredientPrice(ingredient, locationId, token) {
+  const res = await axios.get('https://api.kroger.com/v1/products', {
+    headers: { Authorization: `Bearer ${token}` },
+    params: {
+      'filter.term': ingredient,
+      'filter.locationId': locationId,
+      'filter.limit': 1
+    }
+  });
+
+  return res.data.data[0]?.items[0]?.price?.regular || 0;
+}
+
 
 
 
@@ -406,47 +458,77 @@ app.get('/logout', (req, res) => {
 //display recipe with likes and comments
 app.get('/recipes/:recipe_id', async (req, res) => {
     const recipe_id = req.params.recipe_id;
-
+    console.log("🔍 Fetching recipe:", recipe_id);
+  
     try {
-        const recipe = await db.one('SELECT * FROM recipes WHERE recipe_id = $1', [recipe_id]);
-
-        const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
-
-        const comments = await db.any(`
-            SELECT c.*, u.username 
-            FROM comments c 
-            JOIN users u ON c.user_id = u.user_id 
-            WHERE recipe_id = $1 
-            ORDER BY created_at ASC
-        `, [recipe_id]);
-
-        // Separate top-level comments from replies
-        const rootComments = comments.filter(c => !c.parent_comment_id);
-        const replies = comments.filter(c => c.parent_comment_id);
-
-        // Group replies by parent_comment_id
-        const repliesMap = {};
-        replies.forEach(reply => {
-            if (!repliesMap[reply.parent_comment_id]) {
-                repliesMap[reply.parent_comment_id] = [];
-            }
-            repliesMap[reply.parent_comment_id].push(reply);
-        });
-
+      const recipe = await db.oneOrNone('SELECT * FROM recipes WHERE recipe_id = $1', [recipe_id]);
+      if (!recipe) {
+        console.log("❌ Recipe not found");
+        return res.status(404).send("Recipe not found.");
+      }
+  
+      console.log("✅ Found recipe:", recipe.title);
+  
+      const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
+  
+      const comments = await db.any(`
+        SELECT c.*, u.username 
+        FROM comments c 
+        JOIN users u ON c.user_id = u.user_id 
+        WHERE recipe_id = $1 
+        ORDER BY created_at ASC
+      `, [recipe_id]);
+  
+      const rootComments = comments.filter(c => !c.parent_comment_id);
+      const replies = comments.filter(c => c.parent_comment_id);
+  
+      const repliesMap = {};
+      replies.forEach(reply => {
+        if (!repliesMap[reply.parent_comment_id]) {
+          repliesMap[reply.parent_comment_id] = [];
+        }
+        repliesMap[reply.parent_comment_id].push(reply);
+      });
+  
+      let estimated_price = 0;
+      const token = await getKrogerToken();
+  
+      if (!token) throw new Error("❌ Failed to retrieve Kroger token");
+  
+      const locationId = await getKrogerLocation('80202', token);
+      if (!locationId) throw new Error("❌ Failed to retrieve Kroger location ID");
+  
+      const ingredients = (recipe.ingredients || '').split(',').map(i => i.trim());
+      console.log("🧂 Ingredients:", ingredients);
+  
+      for (const item of ingredients) {
+        const price = await getIngredientPrice(item, locationId, token);
+        console.log(`💰 ${item}: $${price}`);
+        estimated_price += price || 0;
+      }
+  
+      // 🔒 Safely render
+      try {
         res.render('pages/recipe', {
-            recipe,
-            likes: likesCount.count,
-            comments: rootComments,
-            repliesMap,
-            loggedIn: isLoggedIn(req),
-            username: req.session.username,
+          recipe,
+          likes: likesCount.count || 0,
+          comments: rootComments,
+          repliesMap,
+          loggedIn: isLoggedIn(req),
+          username: req.session.username,
+          estimated_price: estimated_price ? estimated_price.toFixed(2) : "N/A"
         });
-
+      } catch (renderErr) {
+        console.error("❌ Handlebars render error:", renderErr.message);
+        console.error(renderErr.stack);
+        res.status(500).send("Render error in recipe.hbs");
+      }
+  
     } catch (err) {
-        console.error(err);
-        res.status(500).send("Error retrieving recipe");
+      console.error("🔥 Internal Server Error:", err.message);
+      res.status(500).send("Internal Server Error");
     }
-});
+  });
 
 
 //like/unlike recipe

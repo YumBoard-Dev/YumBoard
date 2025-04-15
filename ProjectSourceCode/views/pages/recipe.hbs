@@ -33,7 +33,9 @@
         <img src="{{recipe.image_url}}" alt="{{recipe.title}}" class="card-img-top recipe-card-image">
         <div class="m-3">
             <p>{{recipe.description}}</p>
-
+            {{#if estimated_price}}
+                <p><strong>Estimated Price:</strong> ${{estimated_price}}</p>
+            {{/if}}
 
             <!-- Like Count & Toggle -->
             <p>Likes: {{likes}}</p>
