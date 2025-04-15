@@ -1,0 +1,53 @@
+<head>
+  <link rel="stylesheet" href="/static/css/profile.css">
+</head>
+
+<div class="profile-container">
+  <h2>My Profile</h2>
+  <div class="profile-card">
+    <div class="profile-picture">
+      <img id="profile-img" src="{{user.profile_pic_url}}" alt="Profile Picture" />
+    </div>
+
+    <div class="profile-info">
+      <p><strong>Username:</strong> <span id="display-username">{{user.username}}</span></p>
+
+      <div class="edit-form hidden" id="edit-form">
+        <label for="edit-username">Username:</label>
+        <input type="text" id="edit-username" name="edit-username" value="{{user.username}}" />
+
+        <label for="edit-profile-pic">Profile Picture URL:</label>
+        <input type="text" id="edit-profile-pic" name="edit-profile-pic" value="{{user.profile_pic_url}}" />
+      </div>
+
+      <div class="profile-buttons">
+        <button id="edit-btn">Edit</button>
+        <button id="save-btn" class="hidden">Save Changes</button>
+        <button id="cancel-btn" class="hidden">Cancel Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const editBtn = document.getElementById('edit-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const editForm = document.getElementById('edit-form');
+
+    editBtn.addEventListener('click', () => {
+      editForm.classList.remove('hidden');
+      saveBtn.classList.remove('hidden');
+      cancelBtn.classList.remove('hidden');
+      editBtn.classList.add('hidden');
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      editForm.classList.add('hidden');
+      saveBtn.classList.add('hidden');
+      cancelBtn.classList.add('hidden');
+      editBtn.classList.remove('hidden');
+    });
+  });
+</script>

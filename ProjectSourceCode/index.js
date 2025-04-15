@@ -193,12 +193,6 @@ app.get('/', async (req, res) => {
 });
 
 
-
-
-
-
-
-
 // ------------------- Login -------------------
 
 app.get('/login', (req, res) => {
@@ -302,7 +296,7 @@ app.post('/register', async (req, res) => {
             'INSERT INTO users (username, password) VALUES ($1, $2)',
             [username, hashedPassword]
         );
-        
+
         // Get User ID to log in
         let user = await db.one( // TODO Might be able to get normal insert to return the user entry
             'SELECT user_id, username, password FROM users WHERE username = $1',
@@ -313,6 +307,7 @@ app.post('/register', async (req, res) => {
             'INSERT INTO grocery_lists (user_id) VALUES ($1)',
             [user.user_id]
         );
+
 
 
         // Set session
@@ -333,7 +328,6 @@ app.post('/register', async (req, res) => {
             console.log('User registered successfully:', username);
             return res.status(200).redirect('/');
         });
-
 
     } catch (error) {
         console.error(error);
@@ -376,6 +370,34 @@ app.post('/post_recipe', (req, res) => {
         error: false,
     });
 })
+
+// ------------------- Profile Page -------------------
+app.get('/profile', async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
+
+    try {
+        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+
+        res.render("pages/profile", {
+            loggedIn: isLoggedIn(req),
+            user: {
+                username: user.username,
+                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
+            },
+            username: user.username
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error retrieving profile information");
+    }
+});
+
 
 // ------------------- Logout -------------------
 
@@ -432,7 +454,6 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             repliesMap,
             loggedIn: isLoggedIn(req),
             username: req.session.username,
-            liked_by_user: false, // TODO Query whether this user liked it or not
         });
 
     } catch (err) {
@@ -440,10 +461,6 @@ app.get('/recipes/:recipe_id', async (req, res) => {
         res.status(500).send("Error retrieving recipe");
     }
 });
-
-
-
-
 
 
 
@@ -461,6 +478,7 @@ const auth = (req, res, next) => {
 
 // Authentication Required
 app.use(auth);
+
 
 //like/unlike recipe
 app.post('/recipes/:recipe_id/like', async (req, res) => {
@@ -656,6 +674,8 @@ app.post('/list/removeItem', async (req, res) => {
 
     
 });
+ 
+
 
 
 // starting the server and keeping the connection open to listen for more requests

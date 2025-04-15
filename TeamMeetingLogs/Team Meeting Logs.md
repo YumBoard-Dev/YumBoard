@@ -40,4 +40,14 @@ Work will be due right before the TA meeting on Tuesdays.
 
 
 
+# April 15
+
+- Wow, Deadline is coming up fast
+- We need to get more features into main, make more pull requests, push all working code now
+- Figure out login issue
+- Better communication throughout the team
+
+
+
+
 
