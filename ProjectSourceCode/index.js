@@ -95,6 +95,10 @@ Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
 });
 
+Handlebars.registerHelper('isDarkMode', function (str) {
+    return str == 'dark';
+});
+
 // *****************************************************
 // <!-- Section 4 : API Routes -->
 // *****************************************************
@@ -127,6 +131,9 @@ function isLoggedIn(req) {
     return req.session && req.session.userId;
 }
 
+function prefersDarkMode(req) {
+    return req.cookies.theme != null ? req.cookies.theme : 'light';
+}
 
 
 
@@ -152,7 +159,6 @@ app.get('/', async (req, res) => {
     // "image_url": "/static/images/placeholders/placeholder_meal.png"
     // "username": "user123",
     // "profile_pic_url": "/static/images/placeholders/placeholder_user.png"
-    res.cookie('theme', 'light'); // Set the theme cookie
 
     try {
         // Get current user ID from the session (if logged in)
@@ -183,8 +189,7 @@ app.get('/', async (req, res) => {
             loggedIn: isLoggedIn(req),
             username: req.session ? req.session.username : null,
             recipes: recipes,
-            theme: req.cookies.theme != null ? req.cookies.theme : 'light',
-            session: req.session  // Pass session so templates can access current user info.
+            theme: prefersDarkMode(req),
         });
     } catch (err) {
         console.error(err);
@@ -198,6 +203,7 @@ app.get('/', async (req, res) => {
 app.get('/login', (req, res) => {
     res.render("pages/login", {
         loggedIn: isLoggedIn(req),
+        theme: prefersDarkMode(req)
     });
 });
 
@@ -219,6 +225,7 @@ app.post('/login', async (req, res) => {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'Invalid username or password.',
+                theme: prefersDarkMode(req)
             });
         }
 
@@ -239,15 +246,18 @@ app.post('/login', async (req, res) => {
                         resolve();
                     }
                 });
-            });
+            }).then(() => {
+                res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+                console.log('User logged in successfully:', username);
+                return res.redirect('/');
+            })
 
-            console.log('User logged in successfully:', username);
-            return res.redirect('/');
         } else {
             return res.status(400).render("pages/login", {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'Invalid username or password.',
+                theme: prefersDarkMode(req)
             });
         }
     } catch (error) {
@@ -256,6 +266,7 @@ app.post('/login', async (req, res) => {
             loggedIn: isLoggedIn(req),
             error: true,
             message: 'Error logging in: ' + error.message,
+            theme: prefersDarkMode(req)
         });
     }
 });
@@ -266,6 +277,7 @@ app.post('/login', async (req, res) => {
 app.get('/register', (req, res) => {
     res.render("pages/register", {
         loggedIn: isLoggedIn(req),
+        theme: prefersDarkMode(req)
     });
 });
 
@@ -279,6 +291,7 @@ app.post('/register', async (req, res) => {
             loggedIn: isLoggedIn(req),
             error: true,
             message: 'Please enter a valid username and password.',
+            theme: prefersDarkMode(req)
         });
     }
     if (!passwordRegex.test(password)) {
@@ -286,6 +299,7 @@ app.post('/register', async (req, res) => {
             loggedIn: isLoggedIn(req),
             error: true,
             message: 'Password must be 8-15 characters long, include at least one lowercase letter, one uppercase letter, and one special character.',
+            theme: prefersDarkMode(req)
         });
     }
 
@@ -293,7 +307,7 @@ app.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         await db.none(
-            'INSERT INTO users (username, password) VALUES ($1, $2)',
+            'INSERT INTO users (username, password, prefers_dark_mode) VALUES ($1, $2, FALSE)',
             [username, hashedPassword]
         );
 
@@ -302,7 +316,7 @@ app.post('/register', async (req, res) => {
             'SELECT user_id, username, password FROM users WHERE username = $1',
             [username]
         );
-        
+
         await db.none(
             'INSERT INTO grocery_lists (user_id) VALUES ($1)',
             [user.user_id]
@@ -325,6 +339,7 @@ app.post('/register', async (req, res) => {
                 }
             });
         }).then(() => {
+            res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
             console.log('User registered successfully:', username);
             return res.status(200).redirect('/');
         });
@@ -336,12 +351,14 @@ app.post('/register', async (req, res) => {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'Username already exists',
+                theme: prefersDarkMode(req)
             });
         } else {
             return res.status(500).render("pages/register", {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'An error occurred: ' + error.message,
+                theme: prefersDarkMode(req)
             });
         }
     }
@@ -351,6 +368,7 @@ app.post('/register', async (req, res) => {
 app.get('/post_recipe', (req, res) => {
     res.render("pages/post_recipe", {
         loggedIn: isLoggedIn(req),
+        theme: prefersDarkMode(req)
     })
 });
 
@@ -368,6 +386,7 @@ app.post('/post_recipe', (req, res) => {
         loggedIn: isLoggedIn(req),
         message: "Recipe posted successfully! Name: " + recipeName,
         error: false,
+        theme: prefersDarkMode(req)
     });
 })
 
@@ -390,7 +409,8 @@ app.get('/profile', async (req, res) => {
                 username: user.username,
                 profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
             },
-            username: user.username
+            username: user.username,
+            theme: prefersDarkMode(req)
         });
     } catch (err) {
         console.error(err);
@@ -411,6 +431,7 @@ app.get('/logout', (req, res) => {
             loggedIn: isLoggedIn(req),
             error: false,
             message: 'Logged out successfully.',
+            theme: prefersDarkMode(req)
         });
     });
 });
@@ -637,7 +658,7 @@ app.post('/list/addItem', async (req, res) => {
         });
     }
 
-    
+
 });
 
 
@@ -671,10 +692,80 @@ app.post('/list/removeItem', async (req, res) => {
             message: 'Error retrieving grocery list',
         });
     }
-
-    
 });
- 
+
+
+
+app.get('/settings', async (req, res) => {
+
+    try {
+
+        let user = await db.one(
+            'SELECT * FROM users WHERE user_id = $1 LIMIT 1',
+            [req.session.userId]
+        );
+
+        // console.log(user);
+
+        res.status(200).render("pages/settings", {
+            loggedIn: isLoggedIn(req),
+            theme: prefersDarkMode(req)
+        });
+
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/settings", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving user settings. Please reload the page to try again...',
+        });
+    }
+
+
+    // res.render("pages/grocery_list", {
+    //     loggedIn: isLoggedIn(req),
+    // });
+});
+
+
+app.post('/settings/update', async (req, res) => {
+
+    // console.log("Update request received");
+
+    try {
+
+        let user = await db.one(
+            'SELECT * FROM users WHERE user_id = $1 LIMIT 1',
+            [req.session.userId]
+        );
+
+        await db.none('UPDATE users SET prefers_dark_mode = $1 WHERE user_id = $2',
+            [req.body.prefers_dark_mode, req.session.userId]);
+
+        res.cookie('theme', req.body.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+
+
+        // res.status(200).redirect("/settings");
+        res.status(200).render("pages/settings", {
+            loggedIn: isLoggedIn(req),
+            theme: prefersDarkMode(req)
+        });
+
+        console.log("User settings updated successfully:", user.username);
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/settings", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error updating settings',
+            theme: prefersDarkMode(req)
+        });
+    }
+
+
+});
 
 
 

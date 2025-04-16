@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    profile_pic_url TEXT
+    prefers_dark_mode BOOLEAN DEFAULT FALSE NOT NULL -- User preference for dark mode
+    profile_pic_url TEXT,
 );
 
 -------------------------------------------------
