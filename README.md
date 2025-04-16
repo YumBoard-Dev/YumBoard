@@ -5,7 +5,7 @@
 - [Contributors](#contributors)
 - [Technology Stack](#technology-stack)
 - [Prerequisites](#prerequisites)
-- [How to build](#how-to-build)
+- [How to run](#how-to-run)
 - [How to test](#how-to-test)
 - [Deployed Application](#deployed-application)
 
@@ -39,8 +39,18 @@ YumBoard is a social media app designed to allow anyone to see recipes their fri
 1. Clone the repository to your local machine
 2. Using a terminal, navigate to the `ProjectSourceCode` directory
 3. Run `npm install` 
-4. Then, run `docker-compose up` to start it. This may take some time to finish. 
-5. The server is now running, and the application can be found at [localhost:3000](localhost:3000)
+4. Ensure that the desired startup command is in [docker-compose.yaml](./ProjectSourceCode/docker-compose.yaml)
+	- Use `npm run testandrun` to run tests
+	- Use `npm start` to just run the plain server
+5. Then, run `docker-compose up` to start it. This may take some time to finish. 
+6. The server is now running, and the application can be found at [localhost:3000](localhost:3000)
+
+>[!CAUTION]
+>
+>Sometimes when running tests or working on developing code, there will be weird database errors. 
+>
+>Sometimes you can fix them by running `docker-compose down -v` (even if you stop it with `ctrl-c`), which will erase the database and give everything a fresh start. 
+>
 
 ## How to edit `scss` files:
 
