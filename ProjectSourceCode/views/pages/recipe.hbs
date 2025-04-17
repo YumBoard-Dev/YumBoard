@@ -69,7 +69,16 @@
             </div>
 
             <!-- Comments Section -->
-            <h2 class="mt-4">Comments</h2>
+            <div class="hstack gap-3">
+                <h2 class="mt-4">Comments</h2>
+                <div class="w-100"></div>
+                {{#if loggedIn}}
+                <form id="addIngredients" action="/list/addItem" method="post">
+                    <input name="ingredient" type="hidden" value="{{recipe.ingredients}}">
+                    <button type="submit" class="btn btn-primary" style="width: 100px;">Add to <i class="bi bi-cart4"></i></button>
+                </form>
+                {{/if}}
+            </div>
             <ul class="list-group mb-3">
                 {{#each comments}}
                 <li class="list-group-item">

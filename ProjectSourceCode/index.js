@@ -348,72 +348,9 @@ app.post('/register', async (req, res) => {
 });
 
 
-app.get('/post_recipe', (req, res) => {
-    res.render("pages/post_recipe", {
-        loggedIn: isLoggedIn(req),
-    })
-});
-
-app.post('/post_recipe', (req, res) => {
-    var recipeName = req.body.recipeName;
-    var description = req.body.description;
-    var time = req.body.duration;
-    var instructions = req.body.instructions;
-
-    res.render("pages/post_recipe", {
-        recipeName: recipeName,
-        description: description,
-        time: time,
-        instructions: instructions,
-        loggedIn: isLoggedIn(req),
-        message: "Recipe posted successfully! Name: " + recipeName,
-        error: false,
-    });
-})
-
-// ------------------- Profile Page -------------------
-app.get('/profile', async (req, res) => {
-    if (!req.session.userId) {
-        return res.redirect('/login');
-    }
-
-    try {
-        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
-
-        if (!user) {
-            return res.status(404).send("User not found");
-        }
-
-        res.render("pages/profile", {
-            loggedIn: isLoggedIn(req),
-            user: {
-                username: user.username,
-                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
-            },
-            username: user.username
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Error retrieving profile information");
-    }
-});
 
 
-// ------------------- Logout -------------------
 
-app.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send('Error logging out.');
-        }
-        res.status(200).render("pages/login", {
-            loggedIn: isLoggedIn(req),
-            error: false,
-            message: 'Logged out successfully.',
-        });
-    });
-});
 
 
 // ------------------- Likes and Comments -------------------
@@ -439,6 +376,8 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             WHERE r.recipe_id = $1
             ORDER BY r.created_at DESC
         `, [recipe_id]);
+
+        console.log(recipe.ingredients);
 
         const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
 
@@ -494,6 +433,76 @@ const auth = (req, res, next) => {
 
 // Authentication Required
 app.use(auth);
+
+
+
+app.get('/post_recipe', (req, res) => {
+    res.render("pages/post_recipe", {
+        loggedIn: isLoggedIn(req),
+    })
+});
+
+app.post('/post_recipe', (req, res) => {
+    var recipeName = req.body.recipeName;
+    var description = req.body.description;
+    var time = req.body.duration;
+    var instructions = req.body.instructions;
+
+    res.render("pages/post_recipe", {
+        recipeName: recipeName,
+        description: description,
+        time: time,
+        instructions: instructions,
+        loggedIn: isLoggedIn(req),
+        message: "Recipe posted successfully! Name: " + recipeName,
+        error: false,
+    });
+})
+
+// ------------------- Profile Page -------------------
+app.get('/profile', async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
+
+    try {
+        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+
+        res.render("pages/profile", {
+            loggedIn: isLoggedIn(req),
+            user: {
+                username: user.username,
+                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
+            },
+            username: user.username
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error retrieving profile information");
+    }
+});
+
+
+
+// ------------------- Logout -------------------
+
+app.get('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Error logging out.');
+        }
+        res.status(200).render("pages/login", {
+            loggedIn: isLoggedIn(req),
+            error: false,
+            message: 'Logged out successfully.',
+        });
+    });
+});
 
 
 //like/unlike recipe
@@ -619,22 +628,23 @@ app.post('/list/addItem', async (req, res) => {
             [req.session.userId]
         );
 
-        const ingredientName = req.body.ingredient;
+        console.log(req.body.ingredient);
+        var newIngredients = req.body.ingredient.split(",");
 
         // TODO Query Kroger API and find the price of the ingredient
         // For now, let's just set it to 0.00
+
+        // TODO Make sure the ingredient_text is unique and not already in the list
+        const price = 0.00;
+
+        newIngredients.forEach(async ingredient => {
+            await db.none(`INSERT INTO list_ingredients (list_id, ingredient_text, cost) VALUES($1, $2, $3)`, [list_id.list_id, ingredient, price]);
+        })
 
         const ingredients = await db.any(
             'SELECT ingredient_text, cost FROM list_ingredients WHERE list_id = $1',
             [list_id.list_id]
         );
-
-        // TODO Make sure the ingredient_text is unique and not already in the list
-        const price = 0.00;
-
-        await db.none(`INSERT INTO list_ingredients (list_id, ingredient_text, cost) VALUES($1, $2, $3)`, [list_id.list_id, ingredientName, price]);
-
-
 
 
         // res.status(200).render("pages/grocery_list", {
