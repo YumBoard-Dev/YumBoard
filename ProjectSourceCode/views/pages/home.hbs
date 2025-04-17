@@ -7,8 +7,21 @@
             </a>
             <div class="card-body">
                 <div class="m-3">
-                    <h4 class="card-title">{{title}}</h4>
-                    <p class="card-text">{{description}}</p>
+                    <div class="container-fluid">
+                        <div class="row gy-3">
+
+                            <div class="col">
+                                <h4 class="card-title">{{title}}</h4>
+                                <p class="card-text">{{description}}</p>
+                            </div>
+                            <a class="col-md-auto" href="/users/{{user_id}}">
+                                <div class="hstack gap-3">
+                                    <b>{{username}}</b>
+                                    <img src="{{profile_pic_url}}" class="recipe-profile-picture" alt="{{username}}'s profile picture">
+                                </div>
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 <hr />
                 <div class="container">

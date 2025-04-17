@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    profile_pic_url TEXT
+    profile_pic_url TEXT DEFAULT '/static/images/placeholders/placeholder_profile.png'
 );
 
 -------------------------------------------------
@@ -83,8 +83,8 @@ CREATE TABLE IF NOT EXISTS comments (
 
 -- First, ensure that you have some test users
 INSERT INTO users (username, password, profile_pic_url) VALUES 
-('user123', 'hashed_password1', '/static/images/placeholders/placeholder_user.png'),
-('user456', 'hashed_password2', '/static/images/placeholders/placeholder_user.png');
+('user123', 'hashed_password1', '/static/images/placeholders/placeholder_profile_1.jpg'),
+('user456', 'hashed_password2', '/static/images/placeholders/placeholder_profile_2.jpg');
 
 -- Then, insert example recipes. Make sure that created_by references an existing user_id.
 INSERT INTO recipes (title, description, instructions, ingredients, created_by, public, image_url)

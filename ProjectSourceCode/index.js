@@ -99,29 +99,29 @@ Handlebars.registerHelper('lookup', function (obj, field) {
 // <!-- Section 4 : API Routes -->
 // *****************************************************
 
-const exampleRecipes = [{
-    "recipe_id": 1234,
-    "title": "Spaghetti Bolognese",
-    "description": "A classic Italian pasta dish with a rich meat sauce.",
-    // Instructions are in a string separated by "|"                             
-    "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
-    "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
-    "created_by": "123457",
-    "created_at": "2023-10-01T12:00:00Z",
-    "public": true,
-    "image_url": "/static/images/placeholders/placeholder_meal.png"
-}, {
-    "recipe_id": 1235,
-    "title": "Vegan Buddha Bowl",
-    "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
-    // Instructions are in a string separated by "|"                             
-    "instructions": "Cook quinoa according to package instructions. | Roast your choice of vegetables (e.g., sweet potatoes, broccoli, bell peppers) in the oven. | Prepare a tahini dressing by mixing tahini, lemon juice, garlic, and water. | Assemble the bowl with quinoa, roasted vegetables, and drizzle with tahini dressing.",
-    "ingredients": "quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic",
-    "created_by": "123456",
-    "created_at": "2023-10-02T12:00:00Z",
-    "public": true,
-    "image_url": "/static/images/placeholders/placeholder_meal.png"
-}];
+// const exampleRecipes = [{
+//     "recipe_id": 1234,
+//     "title": "Spaghetti Bolognese",
+//     "description": "A classic Italian pasta dish with a rich meat sauce.",
+//     // Instructions are in a string separated by "|"                             
+//     "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
+//     "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
+//     "created_by": "123457",
+//     "created_at": "2023-10-01T12:00:00Z",
+//     "public": true,
+//     "image_url": "/static/images/placeholders/placeholder_meal.png"
+// }, {
+//     "recipe_id": 1235,
+//     "title": "Vegan Buddha Bowl",
+//     "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
+//     // Instructions are in a string separated by "|"                             
+//     "instructions": "Cook quinoa according to package instructions. | Roast your choice of vegetables (e.g., sweet potatoes, broccoli, bell peppers) in the oven. | Prepare a tahini dressing by mixing tahini, lemon juice, garlic, and water. | Assemble the bowl with quinoa, roasted vegetables, and drizzle with tahini dressing.",
+//     "ingredients": "quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic",
+//     "created_by": "123456",
+//     "created_at": "2023-10-02T12:00:00Z",
+//     "public": true,
+//     "image_url": "/static/images/placeholders/placeholder_meal.png"
+// }];
 
 function isLoggedIn(req) {
     return req.session && req.session.userId;
@@ -348,6 +348,94 @@ app.post('/register', async (req, res) => {
 });
 
 
+
+
+
+
+
+// ------------------- Likes and Comments -------------------
+//display recipe with likes and comments
+app.get('/recipes/:recipe_id', async (req, res) => {
+    const recipe_id = req.params.recipe_id;
+
+    try {
+        const recipe = await db.one(`
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.recipe_id = $1
+            ORDER BY r.created_at DESC
+        `, [recipe_id]);
+
+        console.log(recipe.ingredients);
+
+        const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
+
+        const comments = await db.any(`
+            SELECT c.*, u.username, u.profile_pic_url 
+            FROM comments c 
+            JOIN users u ON c.user_id = u.user_id 
+            WHERE recipe_id = $1 
+            ORDER BY created_at ASC
+        `, [recipe_id]);
+
+        // Separate top-level comments from replies
+        const rootComments = comments.filter(c => !c.parent_comment_id);
+        const replies = comments.filter(c => c.parent_comment_id);
+
+        // Group replies by parent_comment_id
+        const repliesMap = {};
+        replies.forEach(reply => {
+            if (!repliesMap[reply.parent_comment_id]) {
+                repliesMap[reply.parent_comment_id] = [];
+            }
+            repliesMap[reply.parent_comment_id].push(reply);
+        });
+
+        res.render('pages/recipe', {
+            recipe,
+            likes: likesCount.count,
+            comments: rootComments,
+            repliesMap,
+            loggedIn: isLoggedIn(req),
+            username: req.session.username,
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error retrieving recipe");
+    }
+});
+
+
+
+
+// ------------------------------ Authentication Required From Here Onwards ------------------------------
+
+// Authentication Middleware.
+const auth = (req, res, next) => {
+    if (!req.session.userId) {
+        // Default to login page.
+        return res.redirect('/login');
+    }
+    next();
+};
+
+// Authentication Required
+app.use(auth);
+
+
+
 app.get('/post_recipe', (req, res) => {
     res.render("pages/post_recipe", {
         loggedIn: isLoggedIn(req),
@@ -399,6 +487,7 @@ app.get('/profile', async (req, res) => {
 });
 
 
+
 // ------------------- Logout -------------------
 
 app.get('/logout', (req, res) => {
@@ -414,70 +503,6 @@ app.get('/logout', (req, res) => {
         });
     });
 });
-
-
-// ------------------- Likes and Comments -------------------
-//display recipe with likes and comments
-app.get('/recipes/:recipe_id', async (req, res) => {
-    const recipe_id = req.params.recipe_id;
-
-    try {
-        const recipe = await db.one('SELECT * FROM recipes WHERE recipe_id = $1', [recipe_id]);
-
-        const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
-
-        const comments = await db.any(`
-            SELECT c.*, u.username 
-            FROM comments c 
-            JOIN users u ON c.user_id = u.user_id 
-            WHERE recipe_id = $1 
-            ORDER BY created_at ASC
-        `, [recipe_id]);
-
-        // Separate top-level comments from replies
-        const rootComments = comments.filter(c => !c.parent_comment_id);
-        const replies = comments.filter(c => c.parent_comment_id);
-
-        // Group replies by parent_comment_id
-        const repliesMap = {};
-        replies.forEach(reply => {
-            if (!repliesMap[reply.parent_comment_id]) {
-                repliesMap[reply.parent_comment_id] = [];
-            }
-            repliesMap[reply.parent_comment_id].push(reply);
-        });
-
-        res.render('pages/recipe', {
-            recipe,
-            likes: likesCount.count,
-            comments: rootComments,
-            repliesMap,
-            loggedIn: isLoggedIn(req),
-            username: req.session.username,
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Error retrieving recipe");
-    }
-});
-
-
-
-
-// ------------------------------ Authentication Required From Here Onwards ------------------------------
-
-// Authentication Middleware.
-const auth = (req, res, next) => {
-    if (!req.session.userId) {
-        // Default to login page.
-        return res.redirect('/login');
-    }
-    next();
-};
-
-// Authentication Required
-app.use(auth);
 
 
 //like/unlike recipe
@@ -603,22 +628,23 @@ app.post('/list/addItem', async (req, res) => {
             [req.session.userId]
         );
 
-        const ingredientName = req.body.ingredient;
+        console.log(req.body.ingredient);
+        var newIngredients = req.body.ingredient.split(",");
 
         // TODO Query Kroger API and find the price of the ingredient
         // For now, let's just set it to 0.00
+
+        // TODO Make sure the ingredient_text is unique and not already in the list
+        const price = 0.00;
+
+        newIngredients.forEach(async ingredient => {
+            await db.none(`INSERT INTO list_ingredients (list_id, ingredient_text, cost) VALUES($1, $2, $3)`, [list_id.list_id, ingredient, price]);
+        })
 
         const ingredients = await db.any(
             'SELECT ingredient_text, cost FROM list_ingredients WHERE list_id = $1',
             [list_id.list_id]
         );
-
-        // TODO Make sure the ingredient_text is unique and not already in the list
-        const price = 0.00;
-
-        await db.none(`INSERT INTO list_ingredients (list_id, ingredient_text, cost) VALUES($1, $2, $3)`, [list_id.list_id, ingredientName, price]);
-
-
 
 
         // res.status(200).render("pages/grocery_list", {
