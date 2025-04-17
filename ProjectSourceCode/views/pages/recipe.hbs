@@ -1,0 +1,124 @@
+<!-- CSS for Heart Toggle Effect -->
+<style>
+    .heart-toggle i {
+        font-size: 1.5rem;
+        transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .heart-toggle.outline i {
+        color: red;
+    }
+
+    .heart-toggle.outline:hover i {
+        color: darkred;
+        transform: scale(1.2);
+    }
+
+    .heart-toggle.filled i {
+        color: red;
+    }
+
+    .heart-toggle.filled:hover i {
+        transform: scale(1.2);
+    }
+</style>
+
+<div class="container mt-4 card p-3" style="max-width: 700px;">
+    <div class="card-header">
+        <h1>{{recipe.title}}</h1>
+    </div>
+
+
+    <div class="card-body">
+        <img src="{{recipe.image_url}}" alt="{{recipe.title}}" class="card-img-top recipe-card-image">
+        <div class="m-3">
+            <p>{{recipe.description}}</p>
+
+
+            <!-- Like Count & Toggle -->
+            <p>Likes: {{likes}}</p>
+            <div style="display: inline;">
+                {{#if loggedIn}}<form action="/recipes/{{recipe.recipe_id}}/like" method="post">{{/if}}
+
+                    <button {{#if loggedIn}} type="submit" {{else}} data-bs-toggle="modal"
+                        data-bs-target="#staticBackdrop" {{/if}}
+                        class="btn btn-link p-0 heart-toggle {{#if liked_by_user}}filled{{else}}outline{{/if}}">
+                        {{#if liked_by_user}}
+                        <i class="bi bi-heart-fill"></i>
+                        {{else}}
+                        <i class="bi bi-heart"></i>
+                        {{/if}}
+                    </button>
+                    {{#if loggedIn}}
+                </form>{{/if}}
+            </div>
+
+            <!-- Comments Section -->
+            <h2 class="mt-4">Comments</h2>
+            <ul class="list-group mb-3">
+                {{#each comments}}
+                <li class="list-group-item">
+                    <strong>{{username}}</strong> said: {{comment_text}}<br>
+                    <small class="text-muted">{{created_at}}</small>
+
+                    {{!-- Replies to this comment --}}
+                    {{#with (lookup ../repliesMap comment_id) as |replies|}}
+                    <ul class="list-group mt-2">
+                        {{#each replies}}
+                        <li class="list-group-item ms-3">
+                            <strong>{{username}}</strong> replied: {{comment_text}}<br>
+                            <small class="text-muted">{{created_at}}</small>
+                        </li>
+                        {{/each}}
+                    </ul>
+                    {{/with}}
+
+                    {{!-- Reply Form --}}
+                    <form action="/recipes/{{../recipe.recipe_id}}/comments/{{comment_id}}/reply" method="post"
+                        class="mt-2">
+                        <div class="mb-2">
+                            <textarea name="reply" class="form-control" rows="2" placeholder="Write a reply..."
+                                required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Reply</button>
+                    </form>
+                </li>
+                {{/each}}
+            </ul>
+
+            <!-- Add New Comment -->
+            {{#if loggedIn}}<form action="/recipes/{{recipe.recipe_id}}/comments" method="post">{{/if}}
+                <div class="mb-3">
+                    <textarea name="comment" class="form-control" rows="3" placeholder="Add a comment..."
+                        required></textarea>
+                </div>
+                <button {{#if loggedIn}} type="submit" {{else}} data-bs-toggle="modal"
+                    data-bs-target="#staticBackdrop" {{/if}} class="btn btn-secondary">Post Comment</button>
+                {{#if loggedIn}}
+            </form>{{/if}}
+        </div>
+
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="staticBackdrop" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">Register/Log In</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Please <a href="/register">Register</a> or <a href="/login">Log In</a> to like and comment on posts.
+                </div>
+                <div class="modal-footer">
+                    <a href="/register"><button type="button" class="btn btn-primary"
+                            data-bs-dismiss="modal">Register</button></a>
+                    <a href="/login"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Log
+                            In</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
