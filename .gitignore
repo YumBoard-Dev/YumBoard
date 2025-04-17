@@ -9,3 +9,4 @@ ProjectSourceCode/.env
 # So it will not be put in here. 
 
 ProjectSourceCode/resources/images/.DS_Store
+ProjectSourceCode/init_db.sh
