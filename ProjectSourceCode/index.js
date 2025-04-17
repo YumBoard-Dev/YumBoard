@@ -99,29 +99,29 @@ Handlebars.registerHelper('lookup', function (obj, field) {
 // <!-- Section 4 : API Routes -->
 // *****************************************************
 
-const exampleRecipes = [{
-    "recipe_id": 1234,
-    "title": "Spaghetti Bolognese",
-    "description": "A classic Italian pasta dish with a rich meat sauce.",
-    // Instructions are in a string separated by "|"                             
-    "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
-    "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
-    "created_by": "123457",
-    "created_at": "2023-10-01T12:00:00Z",
-    "public": true,
-    "image_url": "/static/images/placeholders/placeholder_meal.png"
-}, {
-    "recipe_id": 1235,
-    "title": "Vegan Buddha Bowl",
-    "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
-    // Instructions are in a string separated by "|"                             
-    "instructions": "Cook quinoa according to package instructions. | Roast your choice of vegetables (e.g., sweet potatoes, broccoli, bell peppers) in the oven. | Prepare a tahini dressing by mixing tahini, lemon juice, garlic, and water. | Assemble the bowl with quinoa, roasted vegetables, and drizzle with tahini dressing.",
-    "ingredients": "quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic",
-    "created_by": "123456",
-    "created_at": "2023-10-02T12:00:00Z",
-    "public": true,
-    "image_url": "/static/images/placeholders/placeholder_meal.png"
-}];
+// const exampleRecipes = [{
+//     "recipe_id": 1234,
+//     "title": "Spaghetti Bolognese",
+//     "description": "A classic Italian pasta dish with a rich meat sauce.",
+//     // Instructions are in a string separated by "|"                             
+//     "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
+//     "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
+//     "created_by": "123457",
+//     "created_at": "2023-10-01T12:00:00Z",
+//     "public": true,
+//     "image_url": "/static/images/placeholders/placeholder_meal.png"
+// }, {
+//     "recipe_id": 1235,
+//     "title": "Vegan Buddha Bowl",
+//     "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
+//     // Instructions are in a string separated by "|"                             
+//     "instructions": "Cook quinoa according to package instructions. | Roast your choice of vegetables (e.g., sweet potatoes, broccoli, bell peppers) in the oven. | Prepare a tahini dressing by mixing tahini, lemon juice, garlic, and water. | Assemble the bowl with quinoa, roasted vegetables, and drizzle with tahini dressing.",
+//     "ingredients": "quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic",
+//     "created_by": "123456",
+//     "created_at": "2023-10-02T12:00:00Z",
+//     "public": true,
+//     "image_url": "/static/images/placeholders/placeholder_meal.png"
+// }];
 
 function isLoggedIn(req) {
     return req.session && req.session.userId;
@@ -422,12 +422,28 @@ app.get('/recipes/:recipe_id', async (req, res) => {
     const recipe_id = req.params.recipe_id;
 
     try {
-        const recipe = await db.one('SELECT * FROM recipes WHERE recipe_id = $1', [recipe_id]);
+        const recipe = await db.one(`
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.recipe_id = $1
+            ORDER BY r.created_at DESC
+        `, [recipe_id]);
 
         const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
 
         const comments = await db.any(`
-            SELECT c.*, u.username 
+            SELECT c.*, u.username, u.profile_pic_url 
             FROM comments c 
             JOIN users u ON c.user_id = u.user_id 
             WHERE recipe_id = $1 

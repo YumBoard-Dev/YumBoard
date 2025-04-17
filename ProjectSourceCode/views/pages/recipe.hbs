@@ -35,22 +35,37 @@
             <p>{{recipe.description}}</p>
 
 
-            <!-- Like Count & Toggle -->
-            <p>Likes: {{likes}}</p>
-            <div style="display: inline;">
-                {{#if loggedIn}}<form action="/recipes/{{recipe.recipe_id}}/like" method="post">{{/if}}
+            <div class="container-fluid">
+                <div class="row gy-3">
 
-                    <button {{#if loggedIn}} type="submit" {{else}} data-bs-toggle="modal"
-                        data-bs-target="#staticBackdrop" {{/if}}
-                        class="btn btn-link p-0 heart-toggle {{#if liked_by_user}}filled{{else}}outline{{/if}}">
-                        {{#if liked_by_user}}
-                        <i class="bi bi-heart-fill"></i>
-                        {{else}}
-                        <i class="bi bi-heart"></i>
-                        {{/if}}
-                    </button>
-                    {{#if loggedIn}}
-                </form>{{/if}}
+                    <!-- Like Count & Toggle -->
+                    <div class="col">
+                        <p>Likes: {{likes}}</p>
+                        <div style="display: inline;">
+                            {{#if loggedIn}}<form action="/recipes/{{recipe.recipe_id}}/like" method="post">{{/if}}
+
+                                <button {{#if loggedIn}} type="submit" {{else}} data-bs-toggle="modal"
+                                    data-bs-target="#staticBackdrop" {{/if}}
+                                    class="btn btn-link p-0 heart-toggle {{#if liked_by_user}}filled{{else}}outline{{/if}}">
+                                    {{#if liked_by_user}}
+                                    <i class="bi bi-heart-fill"></i>
+                                    {{else}}
+                                    <i class="bi bi-heart"></i>
+                                    {{/if}}
+                                </button>
+                                {{#if loggedIn}}
+                            </form>{{/if}}
+                        </div>
+                    </div>
+
+                    <a class="col-md-auto" href="/users/{{user_id}}">
+                        <div class="hstack gap-3">
+                            <b>{{recipe.username}}</b>
+                            <img src="{{recipe.profile_pic_url}}" class="recipe-profile-picture"
+                                alt="{{recipe.username}}'s profile picture">
+                        </div>
+                    </a>
+                </div>
             </div>
 
             <!-- Comments Section -->
@@ -58,15 +73,30 @@
             <ul class="list-group mb-3">
                 {{#each comments}}
                 <li class="list-group-item">
-                    <strong>{{username}}</strong> said: {{comment_text}}<br>
+                    <div class="hstack gap-3">
+                        <a href="/users/{{user_id}}">
+                        <img src="{{profile_pic_url}}" class="comment-profile-picture"
+                            alt="{{username}}'s profile picture">
+                        <strong>{{username}}:</strong>
+                        </a>
+                        {{comment_text}}<br>
+                    </div>
                     <small class="text-muted">{{created_at}}</small>
+
 
                     {{!-- Replies to this comment --}}
                     {{#with (lookup ../repliesMap comment_id) as |replies|}}
                     <ul class="list-group mt-2">
                         {{#each replies}}
                         <li class="list-group-item ms-3">
-                            <strong>{{username}}</strong> replied: {{comment_text}}<br>
+                            <div class="hstack gap-3">
+                                <a href="/users/{{user_id}}">
+                                <img src="{{profile_pic_url}}" class="comment-profile-picture"
+                                    alt="{{username}}'s profile picture">
+                                <strong>{{username}}:</strong>
+                                </a>
+                                {{comment_text}}<br>
+                            </div>
                             <small class="text-muted">{{created_at}}</small>
                         </li>
                         {{/each}}
@@ -92,8 +122,8 @@
                     <textarea name="comment" class="form-control" rows="3" placeholder="Add a comment..."
                         required></textarea>
                 </div>
-                <button {{#if loggedIn}} type="submit" {{else}} data-bs-toggle="modal"
-                    data-bs-target="#staticBackdrop" {{/if}} class="btn btn-secondary">Post Comment</button>
+                <button {{#if loggedIn}} type="submit" {{else}} data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                    {{/if}} class="btn btn-secondary">Post Comment</button>
                 {{#if loggedIn}}
             </form>{{/if}}
         </div>
