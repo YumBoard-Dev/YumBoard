@@ -655,12 +655,9 @@ app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
 });
 
 app.get('/my_recipes', async (req, res) => {
-    const userId = req.session.userId;
-    
-    if(!userId){
-        res.redirect('pages/login')
+    if (!isLoggedIn(req)) {
+        return res.status(401).send("Unauthorized");
     }
-
     try{
         const recipesList = await db.query(
             'SELECT * FROM recipes WHERE created_by = $1 ORDER BY created_at DESC',
