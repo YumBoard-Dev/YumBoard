@@ -110,7 +110,6 @@ VALUES
     '/static/images/placeholders/placeholder_meal.png'
 );
 
-
 -- -------------------------------------------------
 -- -- User_to_Recipes Table
 -- -- Description : Join table for saved or liked recipes
