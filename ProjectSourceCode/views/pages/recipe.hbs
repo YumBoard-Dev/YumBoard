@@ -35,38 +35,77 @@
             <p>{{recipe.description}}</p>
 
 
-            <!-- Like Count & Toggle -->
-            <p>Likes: {{likes}}</p>
-            <div style="display: inline;">
-                {{#if isLoggedIn}}<form action="/recipes/{{recipe.recipe_id}}/like" method="post">{{/if}}
+            <div class="container-fluid">
+                <div class="row gy-3">
 
-                    <button {{#if isLoggedIn}} type="submit" {{else}} data-bs-toggle="modal"
-                        data-bs-target="#staticBackdrop" {{/if}}
-                        class="btn btn-link p-0 heart-toggle {{#if liked_by_user}}filled{{else}}outline{{/if}}">
-                        {{#if liked_by_user}}
-                        <i class="bi bi-heart-fill"></i>
-                        {{else}}
-                        <i class="bi bi-heart"></i>
-                        {{/if}}
-                    </button>
-                    {{#if isLoggedIn}}
-                </form>{{/if}}
+                    <!-- Like Count & Toggle -->
+                    <div class="col">
+                        <p>Likes: {{likes}}</p>
+                        <div style="display: inline;">
+                            {{#if loggedIn}}<form action="/recipes/{{recipe.recipe_id}}/like" method="post">{{/if}}
+
+                                <button {{#if loggedIn}} type="submit" {{else}} data-bs-toggle="modal"
+                                    data-bs-target="#staticBackdrop" {{/if}}
+                                    class="btn btn-link p-0 heart-toggle {{#if liked_by_user}}filled{{else}}outline{{/if}}">
+                                    {{#if liked_by_user}}
+                                    <i class="bi bi-heart-fill"></i>
+                                    {{else}}
+                                    <i class="bi bi-heart"></i>
+                                    {{/if}}
+                                </button>
+                                {{#if loggedIn}}
+                            </form>{{/if}}
+                        </div>
+                    </div>
+
+                    <a class="col-md-auto" href="/users/{{user_id}}">
+                        <div class="hstack gap-3">
+                            <b>{{recipe.username}}</b>
+                            <img src="{{recipe.profile_pic_url}}" class="recipe-profile-picture"
+                                alt="{{recipe.username}}'s profile picture">
+                        </div>
+                    </a>
+                </div>
             </div>
 
             <!-- Comments Section -->
-            <h2 class="mt-4">Comments</h2>
+            <div class="hstack gap-3">
+                <h2 class="mt-4">Comments</h2>
+                <div class="w-100"></div>
+                {{#if loggedIn}}
+                <form id="addIngredients" action="/list/addItem" method="post">
+                    <input name="ingredient" type="hidden" value="{{recipe.ingredients}}">
+                    <button type="submit" class="btn btn-primary" style="width: 100px;">Add to <i class="bi bi-cart4"></i></button>
+                </form>
+                {{/if}}
+            </div>
             <ul class="list-group mb-3">
                 {{#each comments}}
                 <li class="list-group-item">
-                    <strong>{{username}}</strong> said: {{comment_text}}<br>
+                    <div class="hstack gap-3">
+                        <a href="/users/{{user_id}}">
+                        <img src="{{profile_pic_url}}" class="comment-profile-picture"
+                            alt="{{username}}'s profile picture">
+                        <strong>{{username}}:</strong>
+                        </a>
+                        {{comment_text}}<br>
+                    </div>
                     <small class="text-muted">{{created_at}}</small>
+
 
                     {{!-- Replies to this comment --}}
                     {{#with (lookup ../repliesMap comment_id) as |replies|}}
                     <ul class="list-group mt-2">
                         {{#each replies}}
                         <li class="list-group-item ms-3">
-                            <strong>{{username}}</strong> replied: {{comment_text}}<br>
+                            <div class="hstack gap-3">
+                                <a href="/users/{{user_id}}">
+                                <img src="{{profile_pic_url}}" class="comment-profile-picture"
+                                    alt="{{username}}'s profile picture">
+                                <strong>{{username}}:</strong>
+                                </a>
+                                {{comment_text}}<br>
+                            </div>
                             <small class="text-muted">{{created_at}}</small>
                         </li>
                         {{/each}}
@@ -87,14 +126,14 @@
             </ul>
 
             <!-- Add New Comment -->
-            {{#if isLoggedIn}}<form action="/recipes/{{recipe.recipe_id}}/comments" method="post">{{/if}}
+            {{#if loggedIn}}<form action="/recipes/{{recipe.recipe_id}}/comments" method="post">{{/if}}
                 <div class="mb-3">
                     <textarea name="comment" class="form-control" rows="3" placeholder="Add a comment..."
                         required></textarea>
                 </div>
-                <button {{#if isLoggedIn}} type="submit" {{else}} data-bs-toggle="modal"
-                    data-bs-target="#staticBackdrop" {{/if}} class="btn btn-secondary">Post Comment</button>
-                {{#if isLoggedIn}}
+                <button {{#if loggedIn}} type="submit" {{else}} data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                    {{/if}} class="btn btn-secondary">Post Comment</button>
+                {{#if loggedIn}}
             </form>{{/if}}
         </div>
 

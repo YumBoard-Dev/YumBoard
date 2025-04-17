@@ -2,8 +2,8 @@
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS recipes CASCADE;
 DROP TABLE IF EXISTS user_to_recipes CASCADE;
-DROP TABLE IF EXISTS grocery_carts CASCADE;
-DROP TABLE IF EXISTS cart_ingredients CASCADE;
+DROP TABLE IF EXISTS grocery_lists CASCADE;
+DROP TABLE IF EXISTS list_ingredients CASCADE;
 DROP TABLE IF EXISTS recipe_tags CASCADE;
 DROP TABLE IF EXISTS recipe_to_tags CASCADE;
 DROP TABLE IF EXISTS likes CASCADE;
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    profile_pic_url TEXT
+    profile_pic_url TEXT DEFAULT '/static/images/placeholders/placeholder_profile.png'
 );
 
 -------------------------------------------------
@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS recipes (
   description TEXT,                                  -- Optional longer description of recipe/story of the recipe
   instructions TEXT,                                 -- Step-by-step cooking instructions
   ingredients TEXT,                                  -- Comma-separated ingredient list as text
-  duration VARCHAR(10),                              -- Time to make the recipe
-  created_by VARCHAR(100) NOT NULL,                   -- FK to users table (username)
+  created_by INT NOT NULL,                           -- FK to users table
+  duration INTERVAL,                                 -- Time it takes to make the recipe
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Time recipe was posted/created
   public BOOLEAN DEFAULT TRUE,                       -- Whether the recipe is visible to others
   recipe_image VARCHAR(300),                           -- Optional URL to an image of the recipe
@@ -82,8 +82,8 @@ CREATE TABLE IF NOT EXISTS comments (
 
 -- First, ensure that you have some test users
 INSERT INTO users (username, password, profile_pic_url) VALUES 
-('user123', 'hashed_password1', '/static/images/placeholders/placeholder_user.png'),
-('user456', 'hashed_password2', '/static/images/placeholders/placeholder_user.png');
+('user123', 'hashed_password1', '/static/images/placeholders/placeholder_profile_1.jpg'),
+('user456', 'hashed_password2', '/static/images/placeholders/placeholder_profile_2.jpg');
 
 -- Then, insert example recipes. Make sure that created_by references an existing user_id.
 INSERT INTO recipes (title, description, instructions, ingredients, created_by, public, image_url)
@@ -107,6 +107,7 @@ VALUES
     '/static/images/placeholders/placeholder_meal.png'
 );
 
+
 -- -------------------------------------------------
 -- -- User_to_Recipes Table
 -- -- Description : Join table for saved or liked recipes
@@ -122,27 +123,52 @@ VALUES
 -- );
 
 -- -------------------------------------------------
--- -- Grocery Carts Table
+-- -- Grocery Lists Table
 -- -- Description : Stores each user's shopping cart
 -- -------------------------------------------------
 
--- CREATE TABLE IF NOT EXISTS grocery_carts (
---   cart_id SERIAL PRIMARY KEY NOT NULL,
---   user_id INT UNIQUE NOT NULL,
---   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
--- );
+CREATE TABLE IF NOT EXISTS grocery_lists (
+  list_id SERIAL PRIMARY KEY NOT NULL,
+  user_id INT UNIQUE NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
 
 -- -------------------------------------------------
--- -- Cart_Ingredients Table
+-- -- List Ingredients Table
 -- -- Description : Stores ingredient items inside each user's cart
 -- -------------------------------------------------
 
--- CREATE TABLE IF NOT EXISTS cart_ingredients (
---   cart_id INT NOT NULL,                              -- FK to grocery_carts
---   ingredient_text TEXT NOT NULL,
---   PRIMARY KEY (cart_id, ingredient_text),            -- Composite PK: no duplicate ingredients per cart
---   FOREIGN KEY (cart_id) REFERENCES grocery_carts(cart_id) ON DELETE CASCADE
--- );
+CREATE TABLE IF NOT EXISTS list_ingredients (
+    list_id INT NOT NULL,                              -- FK to grocery_carts
+    ingredient_text TEXT NOT NULL,
+    cost DECIMAL(10, 2) DEFAULT 0.00 NOT NULL,                -- Cost of the ingredient
+    PRIMARY KEY (list_id, ingredient_text),            -- Composite PK: no duplicate ingredients per cart
+    FOREIGN KEY (list_id) REFERENCES grocery_lists(list_id) ON DELETE CASCADE
+);
+
+
+INSERT INTO grocery_lists (user_id) VALUES 
+(1),
+(2);
+
+-- Insert ingredients into list_ingredients
+INSERT INTO list_ingredients (list_id, ingredient_text) VALUES
+(1, 'quinoa'),
+(1, 'sweet potatoes'),
+(1, 'broccoli'),
+(1, 'bell peppers'),
+(1, 'tahini'),
+(1, 'lemon juice'),
+(1, 'garlic'),
+(2, 'onions'),
+(2, 'quinoa'),
+(2, 'sweet potatoes'),
+(2, 'broccoli'),
+(2, 'bell peppers'),
+(2, 'tahini'),
+(2, 'lemon juice'),
+(2, 'garlic');
+
 
 
 -- -------------------------------------------------

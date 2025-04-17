@@ -14,22 +14,6 @@ const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 const cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
 const { error } = require('console');
-// const  cookieParser = require('cookie-parser'); // To store very basic cookies, like light/dark mode preference
-
-
-const fs = require('fs');
-
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-fs.mkdirSync(uploadDir, { recursive: true });
-console.log('Created uploads directory');
-}
-
-// This allows serving static files from the uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -65,37 +49,19 @@ db.connect()
         console.log('ERROR:', error.message || error);
     });
 
-    const multer = require('multer');
 
-// Configure storage
-const storage = multer.diskStorage({
-destination: function(req, file, cb) {
-cb(null, 'uploads/'); // Destination folder
-},
-filename: function(req, file, cb) {
-// Create unique filename with original extension
-cb(null, Date.now() + '-' + file.originalname);
+const fs = require('fs');
+
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log('Created uploads directory');
 }
-});
-
-// Set up file filter if you want to restrict file types
-const fileFilter = (req, file, cb) => {
-if (file.mimetype.startsWith('image/')) {
-cb(null, true);
-} else {
-cb(new Error('Not an image! Please upload only images.'), false);
-}
-};
-
-// Initialize upload middleware
-const upload = multer({
-storage: storage,
-limits: {
-fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
-},
-fileFilter: fileFilter
-});
-
+    
+    // This allows serving static files from the uploads directory
+    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+    
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -132,20 +98,42 @@ app.use('/static', express.static('resources')); // Make css files and images wo
 
 app.use(cookieParser()); // To use cookies
 
+const multer = require('multer');
+
+// Configure storage
+const storage = multer.diskStorage({
+destination: function(req, file, cb) {
+cb(null, 'uploads/'); // Destination folder
+},
+filename: function(req, file, cb) {
+// Create unique filename with original extension
+cb(null, Date.now() + '-' + file.originalname);
+}
+});
+
+// Set up file filter if you want to restrict file types
+const fileFilter = (req, file, cb) => {
+if (file.mimetype.startsWith('image/')) {
+cb(null, true);
+} else {
+cb(new Error('Not an image! Please upload only images.'), false);
+}
+};
+
+// Initialize upload middleware
+const upload = multer({
+storage: storage,
+limits: {
+fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
+},
+fileFilter: fileFilter
+});
 
 
 Handlebars.registerHelper("getCommaDelimitedCount", function (text) {
     var result = text.split(",").length;
     return new Handlebars.SafeString(result);
 });
-app.use(cookieParser()); // To use cookies
-
-
-
-Handlebars.registerHelper("getCommaDelimitedCount", function(text) {
-    var result = text.split(",").length;
-    return new Handlebars.SafeString(result);
-  });
 
 Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
@@ -154,40 +142,6 @@ Handlebars.registerHelper('lookup', function (obj, field) {
 // *****************************************************
 // <!-- Section 4 : API Routes -->
 // *****************************************************
-
-
-const exampleRecipes = [{
-    "recipe_id": 1234,
-    "title": "Spaghetti Bolognese",
-    "description": "A classic Italian pasta dish with a rich meat sauce.",
-    // Instructions are in a string separated by "|"                             
-    "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
-    "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
-    "created_by": "123457",
-    "created_at": "2023-10-01T12:00:00Z",
-    "public": true,
-    "image_url": "/static/images/placeholders/placeholder_meal.png"
-},{
-    "recipe_id": 1235,
-    "title": "Vegan Buddha Bowl",
-    "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
-    // Instructions are in a string separated by "|"                             
-    "instructions": "Cook quinoa according to package instructions. | Roast your choice of vegetables (e.g., sweet potatoes, broccoli, bell peppers) in the oven. | Prepare a tahini dressing by mixing tahini, lemon juice, garlic, and water. | Assemble the bowl with quinoa, roasted vegetables, and drizzle with tahini dressing.",
-    "ingredients": "quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic",
-    "created_by": "123456",
-    "created_at": "2023-10-02T12:00:00Z",
-    "public": true,
-    "image_url": "/static/images/placeholders/placeholder_meal.png"
-}];
-
-
-
-
-var isLoggedIn = () => {
-    return true; // TODO make this dependent on whether or not user is actually logged in
-}
-
-
 
 // const exampleRecipes = [{
 //     "recipe_id": 1234,
@@ -283,12 +237,6 @@ app.get('/', async (req, res) => {
 });
 
 
-    
-
-    
-
-
-
 // ------------------- Login -------------------
 
 app.get('/login', (req, res) => {
@@ -324,7 +272,7 @@ app.post('/login', async (req, res) => {
             // Set both userId and username
             req.session.userId = user.user_id;
             req.session.username = username;
-
+            console.log(username);
             // Save session and wait for completion
             await new Promise((resolve, reject) => {
                 req.session.save((error) => {
@@ -393,8 +341,22 @@ app.post('/register', async (req, res) => {
             [username, hashedPassword]
         );
 
+        // Get User ID to log in
+        let user = await db.one( // TODO Might be able to get normal insert to return the user entry
+            'SELECT user_id, username, password FROM users WHERE username = $1',
+            [username]
+        );
+        
+        await db.none(
+            'INSERT INTO grocery_lists (user_id) VALUES ($1)',
+            [user.user_id]
+        );
+
+
+
         // Set session
-        req.session.username = username;
+        req.session.userId = user.user_id;
+        req.session.username = user.username;
 
         // Save session and wait for completion
         await new Promise((resolve, reject) => {
@@ -406,10 +368,10 @@ app.post('/register', async (req, res) => {
                     resolve();
                 }
             });
+        }).then(() => {
+            console.log('User registered successfully:', username);
+            return res.status(200).redirect('/');
         });
-
-        console.log('User registered successfully:', username);
-        return res.redirect('/');
 
     } catch (error) {
         console.error(error);
@@ -429,84 +391,16 @@ app.post('/register', async (req, res) => {
     }
 });
 
-
-app.get('/post_recipe', (req, res) => {
-    res.render("pages/post_recipe", {
-        loggedIn: isLoggedIn(req),
-    })
-});
-
-app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
-    const username = req.session.username;
-    var recipeName = req.body.recipeName;
-    var description = req.body.description;
-    var time = req.body.duration;
-    var instructions = req.body.instructions;
-    var ingredients = req.body.ingredients;
-    var privacy = req.body.privacy === "true";
-    var postTime = Date.now();
-    var filePath = req.file ? req.file.path : null;
-    // console.log(req.imageUpload.path);
-
-    const insertQuery = 'INSERT INTO recipes (title, description, instructions, ingredients, created_at, public, duration, recipe_image) VALUES ($1, $2, $3, $4, TO_TIMESTAMP($5/1000), $6, $7, $8) RETURNING *';
-    let insertConfirm = await db.one(insertQuery, [recipeName, description, instructions, ingredients, postTime, privacy, time, filePath]);
-
-    //res.json(insertConfirm);
-
-    // res.render("pages/post_recipe", {
-    //     recipeName: recipeName,
-    //     description: description,
-    //     time: time,
-    //     instructions: instructions,
-    //     loggedIn: isLoggedIn(req),
-    //     message: "Recipe posted successfully! Name: " + recipeName,
-    //     error: false,
-    // });
-})
-
-// ------------------- Profile Page -------------------
-app.get('/profile', async (req, res) => {
-    if (!req.session.userId) {
-        return res.redirect('/login');
+function ensureLoggedIn(req, res, next) {
+    if (req.session && req.session.user_id) {
+        return next();
     }
-
-    try {
-        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
-
-        if (!user) {
-            return res.status(404).send("User not found");
-        }
-
-        res.render("pages/profile", {
-            loggedIn: true,
-            user: {
-                username: user.username,
-                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
-            },
-            username: user.username
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Error retrieving profile information");
-    }
-});
+    res.status(401).render('pages/login', { error: 'Please log in to post a recipe.' });
+}
 
 
-// ------------------- Logout -------------------
 
-app.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send('Error logging out.');
-        }
-        res.status(200).render("pages/login", {
-            loggedIn: isLoggedIn(req),
-            error: false,
-            message: 'Logged out successfully.',
-        });
-    });
-});
+
 
 
 // ------------------- Likes and Comments -------------------
@@ -515,12 +409,30 @@ app.get('/recipes/:recipe_id', async (req, res) => {
     const recipe_id = req.params.recipe_id;
 
     try {
-        const recipe = await db.one('SELECT * FROM recipes WHERE recipe_id = $1', [recipe_id]);
+        const recipe = await db.one(`
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.recipe_id = $1
+            ORDER BY r.created_at DESC
+        `, [recipe_id]);
+
+        console.log(recipe.ingredients);
 
         const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
 
         const comments = await db.any(`
-            SELECT c.*, u.username 
+            SELECT c.*, u.username, u.profile_pic_url 
             FROM comments c 
             JOIN users u ON c.user_id = u.user_id 
             WHERE recipe_id = $1 
@@ -553,6 +465,117 @@ app.get('/recipes/:recipe_id', async (req, res) => {
         console.error(err);
         res.status(500).send("Error retrieving recipe");
     }
+});
+
+
+
+
+// ------------------------------ Authentication Required From Here Onwards ------------------------------
+
+// Authentication Middleware.
+const auth = (req, res, next) => {
+    if (!req.session.userId) {
+        // Default to login page.
+        return res.redirect('/login');
+    }
+    next();
+};
+
+// Authentication Required
+app.use(auth);
+
+
+
+app.get('/post_recipe', (req, res) => {
+    console.log(req.session.user_id)
+    res.render("pages/post_recipe", {
+        // loggedIn: isLoggedIn(req),
+    })
+});
+
+app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
+    try {
+        const { recipeName, description, duration, instructions, ingredients, privacy } = req.body;
+
+        // Server-side validation
+        console.log('here');
+        if (
+            typeof recipeName !== 'string' || recipeName.trim() === '' ||
+            typeof instructions !== 'string' || instructions.trim() === '' ||
+            typeof ingredients !== 'string' || ingredients.trim() === '' ||
+            !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(duration) || // strict HH:MM format
+            (privacy !== 'true' && privacy !== 'false')
+        ) {
+            console.log('if');
+            return res.status(400).render('pages/post_recipe', {
+                error: "Please fill in all required fields with valid input.",
+            });
+        }
+        console.log('out of if')
+        const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
+        
+        console.log('query1');
+
+        const userQuery = 'SELECT user_id from users WHERE username = $1';
+        const userId = await db.one(userQuery, [req.session.username]);
+
+        const query = `
+            INSERT INTO recipes(title, description, duration, instructions, ingredients, public, image_url, created_by, created_at)
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            RETURNING recipe_id;
+        `;
+        console.log('values');
+        const values = [
+            recipeName.trim(),
+            description?.trim() || '',
+            duration,
+            instructions.trim(),
+            ingredients.trim(),
+            privacy === 'true',
+            image_url,
+            userId.user_id
+        ];
+
+        const result = await db.one(query, values);
+
+        // Log the details before rendering the page
+        console.log("Recipe Name: " + recipeName + ", Description: " + description + ", Time: " + duration + ", Instructions: " + instructions + ", Logged In: " + isLoggedIn(req) + ", Message: Recipe posted successfully! Name: " + recipeName + ", Error: " + false);
+
+        res.render("pages/post_recipe", {
+            recipeName: recipeName,
+            description: description,
+            time: duration,
+            instructions: instructions,
+            loggedIn: isLoggedIn(req),
+            message: "Recipe posted successfully! Name: " + recipeName,
+            error: false,
+        });
+
+        return res.redirect(`/recipes/${result.recipe_id}`);
+    } catch (err) {
+        console.error("Error posting recipe:", err);
+        return res.status(500).render('pages/post_recipe', {
+            error: "An unexpected error occurred while posting your recipe.",
+        });
+    }
+});
+
+
+
+// ------------------- Logout -------------------
+
+app.get('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Error logging out.');
+        }
+        res.status(200).render("pages/login", {
+            loggedIn: isLoggedIn(req),
+            error: false,
+            message: 'Logged out successfully.',
+        });
+    });
 });
 
 
@@ -656,6 +679,129 @@ app.get('/my_recipes', async (req, res) => {
         res.status(500).send("Something went wrong. Reload the website or try again later.")
     }
 });
+
+app.get('/list', async (req, res) => {
+
+    try {
+
+        const list_id = await db.one(
+            'SELECT list_id FROM grocery_lists WHERE user_id = $1',
+            [req.session.userId]
+        );
+
+
+        const ingredients = await db.any(
+            'SELECT ingredient_text, cost FROM list_ingredients WHERE list_id = $1',
+            [list_id.list_id]
+        );
+
+        res.status(200).render("pages/grocery_list", {
+            loggedIn: isLoggedIn(req),
+            ingredients: ingredients
+        });
+
+
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/grocery_list", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving grocery list',
+        });
+    }
+
+
+    // res.render("pages/grocery_list", {
+    //     loggedIn: isLoggedIn(req),
+    // });
+});
+
+
+app.post('/list/addItem', async (req, res) => {
+
+    try {
+
+        const list_id = await db.one(
+            'SELECT list_id FROM grocery_lists WHERE user_id = $1',
+            [req.session.userId]
+        );
+
+        console.log(req.body.ingredient);
+        var newIngredients = req.body.ingredient.split(",");
+
+        // TODO Query Kroger API and find the price of the ingredient
+        // For now, let's just set it to 0.00
+
+        // TODO Make sure the ingredient_text is unique and not already in the list
+        const price = 0.00;
+
+        newIngredients.forEach(async ingredient => {
+            await db.none(`INSERT INTO list_ingredients (list_id, ingredient_text, cost) VALUES($1, $2, $3)`, [list_id.list_id, ingredient, price]);
+        })
+
+        const ingredients = await db.any(
+            'SELECT ingredient_text, cost FROM list_ingredients WHERE list_id = $1',
+            [list_id.list_id]
+        );
+
+
+        // res.status(200).render("pages/grocery_list", {
+        //     loggedIn: isLoggedIn(req),
+        //     ingredients: ingredients
+        // });
+        res.status(200).redirect('/list');
+
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/grocery_list", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving grocery list',
+        });
+    }
+
+    
+});
+
+
+app.post('/list/removeItem', async (req, res) => {
+
+    try {
+
+        const list_id = await db.one(
+            'SELECT list_id FROM grocery_lists WHERE user_id = $1',
+            [req.session.userId]
+        );
+
+        const ingredientName = req.body.ingredient_text;
+        console.log(ingredientName);
+
+        await db.none(`DELETE FROM list_ingredients WHERE list_id = $1 AND ingredient_text = $2`, [list_id.list_id, ingredientName]);
+
+
+        // res.status(200).render("pages/grocery_list", {
+        //     loggedIn: isLoggedIn(req),
+        //     ingredients: ingredients
+        // });
+        res.status(200).redirect('/list');
+
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/grocery_list", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving grocery list',
+        });
+    }
+
+    
+});
+ 
+
+
 
 // starting the server and keeping the connection open to listen for more requests
 module.exports = app.listen(3000);
