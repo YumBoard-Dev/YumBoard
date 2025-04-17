@@ -28,29 +28,25 @@
         <h1>{{recipe.title}}</h1>
     </div>
 
-
     <div class="card-body">
         <img src="{{recipe.image_url}}" alt="{{recipe.title}}" class="card-img-top recipe-card-image">
         <div class="m-3">
             <p>{{recipe.description}}</p>
 
-
             <!-- Like Count & Toggle -->
-            <p>Likes: {{likes}}</p>
+            <p>Likes: <span id="likeCount">{{likes}}</span></p>
             <div style="display: inline;">
-                {{#if loggedIn}}<form action="/recipes/{{recipe.recipe_id}}/like" method="post">{{/if}}
-
-                    <button {{#if loggedIn}} type="submit" {{else}} data-bs-toggle="modal"
-                        data-bs-target="#staticBackdrop" {{/if}}
-                        class="btn btn-link p-0 heart-toggle {{#if liked_by_user}}filled{{else}}outline{{/if}}">
-                        {{#if liked_by_user}}
-                        <i class="bi bi-heart-fill"></i>
-                        {{else}}
-                        <i class="bi bi-heart"></i>
-                        {{/if}}
-                    </button>
-                    {{#if loggedIn}}
-                </form>{{/if}}
+                {{#if loggedIn}}
+                <button id="likeButton"
+                    class="btn btn-link p-0 heart-toggle {{#if liked_by_user}}filled{{else}}outline{{/if}}">
+                    <i class="bi {{#if liked_by_user}}bi-heart-fill{{else}}bi-heart{{/if}}"></i>
+                </button>
+                {{else}}
+                <button data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                    class="btn btn-link p-0 heart-toggle outline">
+                    <i class="bi bi-heart"></i>
+                </button>
+                {{/if}}
             </div>
 
             <!-- Comments Section -->
@@ -59,7 +55,7 @@
                 {{#each comments}}
                 <li class="list-group-item">
                     <strong>{{username}}</strong> said: {{comment_text}}<br>
-                    <small class="text-muted">{{created_at}}</small>
+                    <small class="text-muted">{{formatDate created_at}}</small>
 
                     {{!-- Replies to this comment --}}
                     {{#with (lookup ../repliesMap comment_id) as |replies|}}
@@ -67,7 +63,7 @@
                         {{#each replies}}
                         <li class="list-group-item ms-3">
                             <strong>{{username}}</strong> replied: {{comment_text}}<br>
-                            <small class="text-muted">{{created_at}}</small>
+                            <small class="text-muted">{{formatDate created_at}}</small>
                         </li>
                         {{/each}}
                     </ul>
@@ -121,4 +117,40 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const likeButton = document.getElementById("likeButton");
+        const likeCount = document.getElementById("likeCount");
+        if (likeButton) {
+            likeButton.addEventListener("click", function (event) {
+                event.preventDefault();
+                fetch(window.location.pathname + "/like", {
+                    method: "POST",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Toggle heart icon and class
+                        if (data.liked) {
+                            likeButton.classList.remove("outline");
+                            likeButton.classList.add("filled");
+                            likeButton.querySelector("i").classList.remove("bi-heart");
+                            likeButton.querySelector("i").classList.add("bi-heart-fill");
+                        } else {
+                            likeButton.classList.remove("filled");
+                            likeButton.classList.add("outline");
+                            likeButton.querySelector("i").classList.remove("bi-heart-fill");
+                            likeButton.querySelector("i").classList.add("bi-heart");
+                        }
+                        // Update like count
+                        likeCount.textContent = data.likes;
+                    }
+                });
+            });
+        }
+    });
+</script>
 </div>

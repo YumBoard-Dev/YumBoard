@@ -95,6 +95,11 @@ Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
 });
 
+Handlebars.registerHelper('formatDate', function (date) {
+    const localDate = new Date(date).toLocaleString();
+    return new Handlebars.SafeString(localDate);
+});
+
 // *****************************************************
 // <!-- Section 4 : API Routes -->
 // *****************************************************
@@ -483,6 +488,9 @@ app.use(auth);
 //like/unlike recipe
 app.post('/recipes/:recipe_id/like', async (req, res) => {
     if (!isLoggedIn(req)) {
+        if (req.xhr) {
+            return res.status(401).json({ success: false, error: "Unauthorized" });
+        }
         return res.status(401).send("Unauthorized");
     }
     const recipe_id = req.params.recipe_id;
@@ -493,16 +501,27 @@ app.post('/recipes/:recipe_id/like', async (req, res) => {
             'SELECT * FROM likes WHERE recipe_id = $1 AND user_id = $2',
             [recipe_id, user_id]
         );
+        let liked;
         if (existingLike) {
             // If a like exists, remove it.
             await db.none('DELETE FROM likes WHERE recipe_id = $1 AND user_id = $2', [recipe_id, user_id]);
+            liked = false;
         } else {
             // Otherwise, add a new like.
             await db.none('INSERT INTO likes (recipe_id, user_id, created_at) VALUES ($1, $2, NOW())', [recipe_id, user_id]);
+            liked = true;
+        }
+        // Get new like count
+        const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
+        if (req.xhr) {
+            return res.json({ success: true, liked, likes: likesCount.count });
         }
         res.redirect('/recipes/' + recipe_id);
     } catch (err) {
         console.error(err);
+        if (req.xhr) {
+            return res.status(500).json({ success: false, error: "Error processing like" });
+        }
         res.status(500).send("Error processing like");
     }
 });
