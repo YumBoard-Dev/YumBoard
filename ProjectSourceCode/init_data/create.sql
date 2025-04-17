@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   instructions TEXT,                                 -- Step-by-step cooking instructions
   ingredients TEXT,                                  -- Comma-separated ingredient list as text
   created_by INT NOT NULL,                           -- FK to users table
+  duration INTERVAL,                                 -- Time it takes to make the recipe
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Time recipe was posted/created
   public BOOLEAN DEFAULT TRUE,                       -- Whether the recipe is visible to others
   image_url VARCHAR(300),                            -- Optional URL to an image of the recipe
