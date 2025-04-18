@@ -139,6 +139,10 @@ Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
 });
 
+Handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
+    return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
+});
+
 // *****************************************************
 // <!-- Section 4 : API Routes -->
 // *****************************************************
