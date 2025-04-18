@@ -139,6 +139,11 @@ Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
 });
 
+// Add helper to convert a timestamp to local time
+Handlebars.registerHelper('localTime', function(timestamp) {
+    return new Handlebars.SafeString(new Date(timestamp).toLocaleString());
+});
+
 // *****************************************************
 // <!-- Section 4 : API Routes -->
 // *****************************************************
