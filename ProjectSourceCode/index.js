@@ -541,16 +541,6 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
         // Log the details before rendering the page
         console.log("Recipe Name: " + recipeName + ", Description: " + description + ", Time: " + duration + ", Instructions: " + instructions + ", Logged In: " + isLoggedIn(req) + ", Message: Recipe posted successfully! Name: " + recipeName + ", Error: " + false);
 
-        res.render("pages/post_recipe", {
-            recipeName: recipeName,
-            description: description,
-            time: duration,
-            instructions: instructions,
-            loggedIn: isLoggedIn(req),
-            message: "Recipe posted successfully! Name: " + recipeName,
-            error: false,
-        });
-
         return res.redirect(`/recipes/${result.recipe_id}`);
     } catch (err) {
         console.error("Error posting recipe:", err);
@@ -658,10 +648,11 @@ app.get('/my_recipes', async (req, res) => {
     if (!isLoggedIn(req)) {
         return res.status(401).send("Unauthorized");
     }
+    console.log('my_recipes')
     try{
         const recipesList = await db.query(
             'SELECT * FROM recipes WHERE created_by = $1 ORDER BY created_at DESC',
-            [userId]
+            [req.session.userId]
         );
         const recipes = recipesList.rows;
         
