@@ -494,7 +494,7 @@ app.use(auth);
 app.get('/post_recipe', (req, res) => {
     console.log(req.session.user_id)
     res.render("pages/post_recipe", {
-        // loggedIn: isLoggedIn(req),
+        loggedIn: isLoggedIn(req),
     })
 });
 
@@ -707,7 +707,7 @@ app.post('/list/addItem', async (req, res) => {
             [req.session.userId]
         );
 
-        console.log(req.body.ingredient);
+        ///console.log(req.body.ingredient);
         var newIngredients = req.body.ingredient.split(",");
 
         // TODO Query Kroger API and find the price of the ingredient

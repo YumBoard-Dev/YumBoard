@@ -97,7 +97,7 @@ VALUES
     'spaghetti, ground beef, onions, garlic, tomato sauce',
     1,
     true,
-    '/static/images/placeholders/placeholder_meal.png'
+    '/uploads/danijela-prijovic-qits91IZv1o-unsplash.jpg'
 ),
 (
     'Vegan Buddha Bowl', 
@@ -106,7 +106,7 @@ VALUES
     'quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic',
     2,
     true,
-    '/static/images/placeholders/placeholder_meal.png'
+    '/uploads/martin-baron-PBgbIbOsprk-unsplash.jpg'
 );
 
 
