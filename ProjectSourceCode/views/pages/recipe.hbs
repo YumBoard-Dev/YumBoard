@@ -90,7 +90,7 @@
                         </a>
                         {{comment_text}}<br>
                     </div>
-                    <small class="text-muted">{{created_at}}</small>
+                    <small class="text-muted">{{localTime created_at}}</small>
 
 
                     {{!-- Replies to this comment --}}
@@ -106,7 +106,7 @@
                                 </a>
                                 {{comment_text}}<br>
                             </div>
-                            <small class="text-muted">{{created_at}}</small>
+                            <small class="text-muted">{{localTime created_at}}</small>
                         </li>
                         {{/each}}
                     </ul>
