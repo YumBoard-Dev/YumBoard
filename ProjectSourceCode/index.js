@@ -524,7 +524,7 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
             VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
             RETURNING recipe_id;
         `;
-        console.log('values');
+        console.log(userId.user_id);
         const values = [
             recipeName.trim(),
             description?.trim() || '',
@@ -654,10 +654,10 @@ app.get('/my_recipes', async (req, res) => {
             'SELECT * FROM recipes WHERE created_by = $1 ORDER BY created_at DESC',
             [req.session.userId]
         );
-        const recipes = recipesList.rows;
-        
+        console.log('Recipes List:', recipesList);
+          console.log('Recipes List Rows:', recipesList.rows);
         res.render('pages/my_recipes',{
-            recipes,
+            recipes: recipesList,
             loggedIn: true,
             username: req.session.username
         })
