@@ -50,9 +50,11 @@ CREATE TABLE IF NOT EXISTS recipes (
   duration INTERVAL,                                 -- Time it takes to make the recipe
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Time recipe was posted/created
   public BOOLEAN DEFAULT TRUE,                       -- Whether the recipe is visible to others
-  recipe_image VARCHAR(300),                           -- Optional URL to an image of the recipe
-  FOREIGN KEY (created_by) REFERENCES users(username) ON DELETE CASCADE
+  image_url VARCHAR(300),                            -- Optional URL to an image of the recipe
+  FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
+
 -------------------------------------------------
 -- Likes Table
 -- Description : Stores likes created by users
@@ -193,5 +195,4 @@ INSERT INTO list_ingredients (list_id, ingredient_text) VALUES
 --   FOREIGN KEY (recipe_id) REFERENCES recipes(recipe_id) ON DELETE CASCADE,
 --   FOREIGN KEY (tag_id) REFERENCES recipe_tags(tag_id) ON DELETE CASCADE
 -- );
-
 
