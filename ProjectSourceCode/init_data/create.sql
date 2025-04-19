@@ -33,7 +33,9 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     profile_pic_url TEXT DEFAULT '/static/images/placeholders/placeholder_profile.png',
+    bio TEXT DEFAULT 'This user has not added a bio yet.',
     prefers_dark_mode BOOLEAN DEFAULT FALSE NOT NULL -- User preference for dark mode
+
 );
 
 -------------------------------------------------
@@ -98,7 +100,7 @@ VALUES
     'spaghetti, ground beef, onions, garlic, tomato sauce',
     1,
     true,
-    '/uploads/danijela-prijovic-qits91IZv1o-unsplash.jpg'
+    '/static/images/placeholders/danijela-prijovic-qits91IZv1o-unsplash.jpg'
 ),
 (
     'Vegan Buddha Bowl', 
@@ -107,7 +109,7 @@ VALUES
     'quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic',
     2,
     true,
-    '/uploads/martin-baron-PBgbIbOsprk-unsplash.jpg'
+    '/static/images/placeholders/martin-baron-PBgbIbOsprk-unsplash.jpg'
 );
 
 
@@ -196,5 +198,4 @@ INSERT INTO list_ingredients (list_id, ingredient_text) VALUES
 --   FOREIGN KEY (recipe_id) REFERENCES recipes(recipe_id) ON DELETE CASCADE,
 --   FOREIGN KEY (tag_id) REFERENCES recipe_tags(tag_id) ON DELETE CASCADE
 -- );
-
 

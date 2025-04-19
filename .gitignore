@@ -10,3 +10,4 @@ ProjectSourceCode/.env
 
 ProjectSourceCode/resources/images/.DS_Store
 ProjectSourceCode/init_db.sh
+ProjectSourceCode/uploads

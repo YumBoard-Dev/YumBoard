@@ -1,4 +1,5 @@
 <div class="container width-100 display-flex justify-content-center" style="margin-top: 20px;">
+    {{> alert}}
     {{#each recipes}}
     <div class="row p-2 display-flex justify-content-center">
         <div class="card p-3 recipe-card" style="width: 50rem;">
@@ -14,7 +15,7 @@
                                 <h4 class="card-title">{{title}}</h4>
                                 <p class="card-text">{{description}}</p>
                             </div>
-                            <a class="col-md-auto" href="/users/{{user_id}}">
+                            <a class="col-md-auto" href="/users/{{created_by}}">
                                 <div class="hstack gap-3">
                                     <b>{{username}}</b>
                                     <img src="{{profile_pic_url}}" class="recipe-profile-picture" alt="{{username}}'s profile picture">

@@ -1,0 +1,73 @@
+<h1>My Recipes</h1>
+
+<form id="sortForm">
+  <label for="sort_by">Sort by:</label>
+  <select name="sort_by" id="sort_by">
+    <option value="descPost">Newest First</option>
+    <option value="ascPost">Oldest First</option>
+    <option value="ascTime">Shortest Time</option>
+    <option value="descTime">Longest Time</option>
+    <option value="ascIngredients">Ingredients A-Z</option>
+    <option value="descIngredients">Ingredients Z-A</option>
+    <option value="ascLikes">Fewest Likes</option>
+    <option value="descLikes">Most Likes</option>
+  </select>
+</form>
+
+<div id="recipeList">
+  {{#each recipes}}
+    <div class="recipe-card">
+      <h2>{{this.title}}</h2>
+      {{#if this.image_url}}<img src="{{this.image_url}}" alt="{{this.title}}" style="max-width:200px;">{{/if}}
+      <p><strong>Description:</strong> {{this.description}}</p>
+      <p><strong>Ingredients:</strong> {{this.ingredients}}</p>
+      <p><strong>Duration:</strong> {{this.duration}}</p>
+      <p><strong>Likes:</strong> {{this.like_count}}</p>
+      <p><strong>Created At:</strong> {{this.created_at}}</p>
+    </div>
+  {{/each}}
+</div>
+
+<script>
+document.getElementById('sort_by').addEventListener('change', async function () {
+  const sortValue = this.value;
+  const recipeList = document.getElementById('recipeList');
+
+  try {
+    const res = await fetch('/my_recipes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sort_by: sortValue })
+    });
+
+    if (!res.ok) throw new Error(`Error ${res.status}`);
+
+    const data = await res.json();
+    recipeList.innerHTML = '';
+
+    if (data.recipes.length === 0) {
+      recipeList.innerHTML = '<p>No recipes found.</p>';
+    } else {
+      data.recipes.forEach(recipe => {
+        const card = document.createElement('div');
+        card.className = 'recipe-card';
+        card.innerHTML = `
+          <h2>${recipe.title}</h2>
+          ${recipe.image_url ? `<img src="${recipe.image_url}" alt="${recipe.title}" style="max-width:200px;">` : ''}
+          <p><strong>Description:</strong> ${recipe.description || ''}</p>
+          <p><strong>Ingredients:</strong> ${recipe.ingredients || ''}</p>
+          <p><strong>Duration:</strong> ${recipe.duration || ''}</p>
+          <p><strong>Likes:</strong> ${recipe.like_count || 0}</p>
+          <p><strong>Created At:</strong> ${new Date(recipe.created_at).toLocaleString()}</p>
+        `;
+        recipeList.appendChild(card);
+      });
+    }
+  } catch (err) {
+    console.error('Error fetching sorted recipes:', err);
+    recipeList.innerHTML = '<p>Failed to load recipes. Please try again later.</p>';
+  }
+});
+</script>
