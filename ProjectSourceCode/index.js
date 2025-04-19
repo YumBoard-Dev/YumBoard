@@ -119,7 +119,7 @@ const fileFilter = (req, file, cb) => {
         cb(null, true);
     } else {
         cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'), false);
-};
+}};
 
 // Initialize upload middleware
 const upload = multer({
@@ -487,29 +487,75 @@ app.post('/register', async (req, res) => {
 
 
 app.get('/post_recipe', (req, res) => {
+    console.log(req.session.user_id)
     res.render("pages/post_recipe", {
         loggedIn: isLoggedIn(req),
-        theme: prefersDarkMode(req)
     })
 });
 
-app.post('/post_recipe', (req, res) => {
-    var recipeName = req.body.recipeName;
-    var description = req.body.description;
-    var time = req.body.duration;
-    var instructions = req.body.instructions;
+app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
+    try {
+        const { recipeName, description, duration, instructions, ingredients, privacy } = req.body;
 
-    res.render("pages/post_recipe", {
-        recipeName: recipeName,
-        description: description,
-        time: time,
-        instructions: instructions,
-        loggedIn: isLoggedIn(req),
-        message: "Recipe posted successfully! Name: " + recipeName,
-        error: false,
-        theme: prefersDarkMode(req)
-    });
-})
+        // Server-side validation
+        console.log('here');
+        if (
+            typeof recipeName !== 'string' || recipeName.trim() === '' ||
+            typeof instructions !== 'string' || instructions.trim() === '' ||
+            typeof ingredients !== 'string' || ingredients.trim() === '' ||
+            !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(duration) || // strict HH:MM format
+            (privacy !== 'true' && privacy !== 'false')
+        ) {
+            console.log('if');
+            return res.status(400).render('pages/post_recipe', {
+                error: "Please fill in all required fields with valid input.",
+            });
+        }
+        console.log('out of if')
+        const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
+
+        console.log('query1');
+
+        const userQuery = 'SELECT user_id from users WHERE username = $1';
+        const userId = await db.one(userQuery, [req.session.username]);
+
+        const query = `
+            INSERT INTO recipes(title, description, duration, instructions, ingredients, public, image_url, created_by, created_at)
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            RETURNING recipe_id;
+        `;
+        console.log(userId.user_id);
+        // Clean up ingredients: remove empty entries and trim spaces
+        const cleanedIngredients = ingredients
+            .split(',')
+            .map(s => s.trim())
+            .filter(s => s.length > 0)
+            .join(',');
+
+        const values = [
+            recipeName.trim(),
+            description?.trim() || '',
+            duration,
+            instructions.trim(),
+            cleanedIngredients,
+            privacy === 'true',
+            image_url,
+            userId.user_id
+        ];
+
+        const result = await db.one(query, values);
+
+        // Log the details before rendering the page
+        console.log("Recipe Name: " + recipeName + ", Description: " + description + ", Time: " + duration + ", Instructions: " + instructions + ", Logged In: " + isLoggedIn(req) + ", Message: Recipe posted successfully! Name: " + recipeName + ", Error: " + false);
+
+        return res.redirect(`/recipes/${result.recipe_id}`);
+    } catch (err) {
+        console.error("Error posting recipe:", err);
+        return res.status(500).render('pages/post_recipe', {
+            error: "An unexpected error occurred while posting your recipe.",
+        });
+    }
+});
 
 // ------------------- Profile Page -------------------
 app.get('/profile', async (req, res) => {
