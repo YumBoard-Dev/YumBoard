@@ -432,7 +432,7 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             ORDER BY r.created_at DESC
         `, [recipe_id]);
 
-        console.log(recipe.ingredients);
+        // console.log(recipe.ingredients);
 
         const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
 
@@ -561,6 +561,38 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
         console.error("Error posting recipe:", err);
         return res.status(500).render('pages/post_recipe', {
             error: "An unexpected error occurred while posting your recipe.",
+        });
+    }
+});
+
+
+// ------------------- Profile Page -------------------
+app.get('/profile', async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
+
+    try {
+        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+
+        res.render("pages/profile", {
+            loggedIn: isLoggedIn(req),
+            user: {
+                username: user.username,
+                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
+            },
+            username: user.username
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/login", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving profile information',
         });
     }
 });
@@ -707,7 +739,6 @@ app.post('/list/addItem', async (req, res) => {
             [req.session.userId]
         );
 
-        ///console.log(req.body.ingredient);
         var newIngredients = req.body.ingredient.split(",");
 
         // TODO Query Kroger API and find the price of the ingredient
@@ -756,7 +787,6 @@ app.post('/list/removeItem', async (req, res) => {
         );
 
         const ingredientName = req.body.ingredient_text;
-        console.log(ingredientName);
 
         await db.none(`DELETE FROM list_ingredients WHERE list_id = $1 AND ingredient_text = $2`, [list_id.list_id, ingredientName]);
 
