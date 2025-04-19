@@ -464,7 +464,6 @@ app.get('/profile', async (req, res) => {
             },
             username: user.username,
             theme: prefersDarkMode(req)
-
         });
     } catch (err) {
         console.error(err);
@@ -473,7 +472,6 @@ app.get('/profile', async (req, res) => {
             error: true,
             message: 'Error retrieving profile information',
             theme: prefersDarkMode(req)
-
         });
     }
 });
