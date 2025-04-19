@@ -60,10 +60,10 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
     console.log('Created uploads directory');
 }
-    
-    // This allows serving static files from the uploads directory
-    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-    
+
+// This allows serving static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -104,31 +104,31 @@ const multer = require('multer');
 
 // Configure storage
 const storage = multer.diskStorage({
-destination: function(req, file, cb) {
-cb(null, 'uploads/'); // Destination folder
-},
-filename: function(req, file, cb) {
-// Create unique filename with original extension
-cb(null, Date.now() + '-' + file.originalname);
-}
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/'); // Destination folder
+    },
+    filename: function (req, file, cb) {
+        // Create unique filename with original extension
+        cb(null, Date.now() + '-' + file.originalname);
+    }
 });
 
 // Set up file filter if you want to restrict file types
 const fileFilter = (req, file, cb) => {
-if (file.mimetype.startsWith('image/')) {
-cb(null, true);
-} else {
-cb(new Error('Not an image! Please upload only images.'), false);
-}
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Not an image! Please upload only images.'), false);
+    }
 };
 
 // Initialize upload middleware
 const upload = multer({
-storage: storage,
-limits: {
-fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
-},
-fileFilter: fileFilter
+    storage: storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
+    },
+    fileFilter: fileFilter
 });
 
 
@@ -141,10 +141,16 @@ Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
 });
 
+
 // Add helper to convert a timestamp to local time
-Handlebars.registerHelper('localTime', function(timestamp) {
+Handlebars.registerHelper('localTime', function (timestamp) {
     return new Handlebars.SafeString(new Date(timestamp).toLocaleString());
 });
+
+Handlebars.registerHelper('isDarkMode', function (str, options) {
+    return str == 'dark' ? options.fn(this) : options.inverse(this);
+});
+
 
 // *****************************************************
 // <!-- Section 4 : API Routes -->
@@ -178,6 +184,9 @@ function isLoggedIn(req) {
     return req.session && req.session.userId;
 }
 
+function prefersDarkMode(req) {
+    return req.cookies.theme != null ? req.cookies.theme : 'light';
+}
 
 
 
@@ -203,7 +212,6 @@ app.get('/', async (req, res) => {
     // "image_url": "/static/images/placeholders/placeholder_meal.png"
     // "username": "user123",
     // "profile_pic_url": "/static/images/placeholders/placeholder_user.png"
-    res.cookie('theme', 'light'); // Set the theme cookie
 
     try {
         // Get current user ID from the session (if logged in)
@@ -234,8 +242,7 @@ app.get('/', async (req, res) => {
             loggedIn: isLoggedIn(req),
             username: req.session ? req.session.username : null,
             recipes: recipes,
-            theme: req.cookies.theme != null ? req.cookies.theme : 'light',
-            session: req.session  // Pass session so templates can access current user info.
+            theme: prefersDarkMode(req),
         });
     } catch (err) {
         console.error(err);
@@ -249,6 +256,7 @@ app.get('/', async (req, res) => {
 app.get('/login', (req, res) => {
     res.render("pages/login", {
         loggedIn: isLoggedIn(req),
+        theme: prefersDarkMode(req)
     });
 });
 
@@ -261,7 +269,7 @@ app.post('/login', async (req, res) => {
 
     try {
         const user = await db.oneOrNone(
-            'SELECT user_id, username, password FROM users WHERE username = $1',
+            'SELECT * FROM users WHERE username = $1',
             [username]
         );
 
@@ -270,6 +278,7 @@ app.post('/login', async (req, res) => {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'Invalid username or password.',
+                theme: prefersDarkMode(req)
             });
         }
 
@@ -279,7 +288,7 @@ app.post('/login', async (req, res) => {
             // Set both userId and username
             req.session.userId = user.user_id;
             req.session.username = username;
-            console.log(username);
+            // console.log(username);
             // Save session and wait for completion
             await new Promise((resolve, reject) => {
                 req.session.save((error) => {
@@ -290,15 +299,19 @@ app.post('/login', async (req, res) => {
                         resolve();
                     }
                 });
-            });
+            }).then(() => {
+                console.log(user);
+                res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+                console.log('User logged in successfully:', username);
+                return res.redirect('/');
+            })
 
-            console.log('User logged in successfully:', username);
-            return res.redirect('/');
         } else {
             return res.status(400).render("pages/login", {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'Invalid username or password.',
+                theme: prefersDarkMode(req)
             });
         }
     } catch (error) {
@@ -307,6 +320,7 @@ app.post('/login', async (req, res) => {
             loggedIn: isLoggedIn(req),
             error: true,
             message: 'Error logging in: ' + error.message,
+            theme: prefersDarkMode(req)
         });
     }
 });
@@ -317,6 +331,7 @@ app.post('/login', async (req, res) => {
 app.get('/register', (req, res) => {
     res.render("pages/register", {
         loggedIn: isLoggedIn(req),
+        theme: prefersDarkMode(req)
     });
 });
 
@@ -330,6 +345,7 @@ app.post('/register', async (req, res) => {
             loggedIn: isLoggedIn(req),
             error: true,
             message: 'Please enter a valid username and password.',
+            theme: prefersDarkMode(req)
         });
     }
     if (!passwordRegex.test(password)) {
@@ -337,6 +353,7 @@ app.post('/register', async (req, res) => {
             loggedIn: isLoggedIn(req),
             error: true,
             message: 'Password must be 8-15 characters long, include at least one lowercase letter, one uppercase letter, and one special character.',
+            theme: prefersDarkMode(req)
         });
     }
 
@@ -350,10 +367,10 @@ app.post('/register', async (req, res) => {
 
         // Get User ID to log in
         let user = await db.one( // TODO Might be able to get normal insert to return the user entry
-            'SELECT user_id, username, password FROM users WHERE username = $1',
+            'SELECT * FROM users WHERE username = $1',
             [username]
         );
-        
+
         await db.none(
             'INSERT INTO grocery_lists (user_id) VALUES ($1)',
             [user.user_id]
@@ -376,6 +393,7 @@ app.post('/register', async (req, res) => {
                 }
             });
         }).then(() => {
+            res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
             console.log('User registered successfully:', username);
             return res.status(200).redirect('/');
         });
@@ -387,27 +405,99 @@ app.post('/register', async (req, res) => {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'Username already exists',
+                theme: prefersDarkMode(req)
             });
         } else {
             return res.status(500).render("pages/register", {
                 loggedIn: isLoggedIn(req),
                 error: true,
                 message: 'An error occurred: ' + error.message,
+                theme: prefersDarkMode(req)
             });
         }
     }
 });
 
-function ensureLoggedIn(req, res, next) {
-    if (req.session && req.session.user_id) {
-        return next();
+
+
+app.get('/post_recipe', (req, res) => {
+    res.render("pages/post_recipe", {
+        loggedIn: isLoggedIn(req),
+        theme: prefersDarkMode(req)
+    })
+});
+
+app.post('/post_recipe', (req, res) => {
+    var recipeName = req.body.recipeName;
+    var description = req.body.description;
+    var time = req.body.duration;
+    var instructions = req.body.instructions;
+
+    res.render("pages/post_recipe", {
+        recipeName: recipeName,
+        description: description,
+        time: time,
+        instructions: instructions,
+        loggedIn: isLoggedIn(req),
+        message: "Recipe posted successfully! Name: " + recipeName,
+        error: false,
+        theme: prefersDarkMode(req)
+    });
+})
+
+// ------------------- Profile Page -------------------
+app.get('/profile', async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login');
     }
-    res.status(401).render('pages/login', { error: 'Please log in to post a recipe.' });
-}
+
+    try {
+        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+
+        res.render("pages/profile", {
+            loggedIn: isLoggedIn(req),
+            user: {
+                username: user.username,
+                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
+            },
+            username: user.username,
+            theme: prefersDarkMode(req)
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/login", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving profile information',
+            theme: prefersDarkMode(req)
+        });
+    }
+});
 
 
+// ------------------- Logout -------------------
 
+app.get('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Error logging out.');
+        }
 
+        // Clear the theme cookie
+        res.clearCookie('theme');
+        res.status(200).render("pages/login", {
+            loggedIn: isLoggedIn(req),
+            error: false,
+            message: 'Logged out successfully.',
+            theme: 'light',
+        });
+    });
+});
 
 
 // ------------------- Likes and Comments -------------------
@@ -434,7 +524,7 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             ORDER BY r.created_at DESC
         `, [recipe_id]);
 
-        console.log(recipe.ingredients);
+        // console.log(recipe.ingredients);
 
         const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
 
@@ -542,7 +632,7 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
         }
         console.log('out of if')
         const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
-        
+
         console.log('query1');
 
         const userQuery = 'SELECT user_id from users WHERE username = $1';
@@ -585,6 +675,38 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
         console.error("Error posting recipe:", err);
         return res.status(500).render('pages/post_recipe', {
             error: "An unexpected error occurred while posting your recipe.",
+        });
+    }
+});
+
+
+// ------------------- Profile Page -------------------
+app.get('/profile', async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
+
+    try {
+        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+
+        res.render("pages/profile", {
+            loggedIn: isLoggedIn(req),
+            user: {
+                username: user.username,
+                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
+            },
+            username: user.username
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/login", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving profile information',
         });
     }
 });
@@ -727,7 +849,8 @@ app.get('/list', async (req, res) => {
       res.render('pages/grocery_list', {
         loggedIn: isLoggedIn(req),
         ingredients,
-        totalCost
+        totalCost,
+        theme: prefersDarkMode(req)
       });
     } catch (err) {
       console.error('[LIST] fatal error', err);
@@ -735,6 +858,7 @@ app.get('/list', async (req, res) => {
         loggedIn: isLoggedIn(req),
         error: true,
         message: 'Error retrieving grocery list',
+        theme: prefersDarkMode(req)
       });
     }
   });
@@ -808,6 +932,7 @@ app.get('/list', async (req, res) => {
   
       res.redirect('/list');
   
+
     } catch (err) {
       console.error('POST /list/removeItem error', err);
       res.status(500).render('pages/grocery_list', {
@@ -816,9 +941,81 @@ app.get('/list', async (req, res) => {
         message: 'Error removing item'
       });
     }
-  });
- 
+});
 
+
+
+app.get('/settings', async (req, res) => {
+
+    try {
+
+        let user = await db.one(
+            'SELECT * FROM users WHERE user_id = $1 LIMIT 1',
+            [req.session.userId]
+        );
+
+        // console.log(user);
+
+        res.status(200).render("pages/settings", {
+            loggedIn: isLoggedIn(req),
+            theme: prefersDarkMode(req)
+        });
+
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/settings", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving user settings. Please reload the page to try again...',
+        });
+    }
+});
+
+
+app.get('/settings/update', async (req, res) => {
+    res.status(200).redirect('/settings');
+});
+
+
+app.post('/settings/update', async (req, res) => {
+
+    // console.log("Update request received");
+
+    try {
+
+        let user = await db.one(
+            'SELECT * FROM users WHERE user_id = $1 LIMIT 1',
+            [req.session.userId]
+        );
+
+        await db.none('UPDATE users SET prefers_dark_mode = $1 WHERE user_id = $2',
+            [req.body.prefers_dark_mode, req.session.userId]);
+
+        res.cookie('theme', req.body.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+
+
+        res.status(200).redirect("/settings/update");
+        // res.status(200).redirect('back');
+        // res.status(200).render("pages/settings", {
+        //     loggedIn: isLoggedIn(req),
+        //     theme: req.body.prefers_dark_mode ? 'dark' : 'light'
+        // });
+
+        console.log("User settings updated successfully:", user.username);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/settings", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error updating settings',
+            theme: prefersDarkMode(req)
+        });
+    }
+
+
+});
 
 
 // starting the server and keeping the connection open to listen for more requests

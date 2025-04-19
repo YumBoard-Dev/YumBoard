@@ -1,0 +1,35 @@
+<div class="w-100 h-100 d-flex" style="padding: 20px; justify-content: center;">
+    {{> alert}}
+    <div class="row card p-2 w-50 d-flex flex-column align-items-center text-center">
+        <h1>Settings</h1>
+        <h4>Dark Mode</h4>
+        <p>Toggle dark mode on or off.</p>
+        <input type="checkbox" class="btn-check" id="btn-check-outlined" autocomplete="off" onchange="toggleDarkMode(this)"
+            {{#isDarkMode theme}} checked {{/isDarkMode}}/>
+        <label class="btn btn-outline-primary" style="width:200px;" for="btn-check-outlined">{{theme}}</label><br>
+    </div>
+</div>
+
+<script>
+
+    function toggleDarkMode(event) {
+        console.log(event);
+
+        const data = { "prefers_dark_mode": event.checked};
+
+        fetch('/settings/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        }).then(() => {
+            setTimeout(() => {window.location.reload(true)}, 10);
+            
+            
+        }).catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+
+</script>
