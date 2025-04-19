@@ -58,10 +58,10 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
     console.log('Created uploads directory');
 }
-    
-    // This allows serving static files from the uploads directory
-    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-    
+
+// This allows serving static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -102,13 +102,13 @@ const multer = require('multer');
 
 // Configure storage
 const storage = multer.diskStorage({
-destination: function(req, file, cb) {
-cb(null, 'uploads/'); // Destination folder
-},
-filename: function(req, file, cb) {
-// Create unique filename with original extension
-cb(null, Date.now() + '-' + file.originalname);
-}
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/'); // Destination folder
+    },
+    filename: function (req, file, cb) {
+        // Create unique filename with original extension
+        cb(null, Date.now() + '-' + file.originalname);
+    }
 });
 
 // Update file filter to restrict file types
@@ -123,11 +123,11 @@ const fileFilter = (req, file, cb) => {
 
 // Initialize upload middleware
 const upload = multer({
-storage: storage,
-limits: {
-fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
-},
-fileFilter: fileFilter
+    storage: storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
+    },
+    fileFilter: fileFilter
 });
 
 
@@ -145,7 +145,7 @@ Handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
 });
 
 // Add helper to convert a timestamp to local time
-Handlebars.registerHelper('localTime', function(timestamp) {
+Handlebars.registerHelper('localTime', function (timestamp) {
     return new Handlebars.SafeString(new Date(timestamp).toLocaleString());
 });
 
@@ -188,26 +188,6 @@ function isLoggedIn(req) {
 
 app.get('/', async (req, res) => {
 
-    // TODO Make a query to the database to get the recipes relevant to the user
-    // Make sure the query includes: 
-    // 1. All values for a recipe row in the database
-    // 2. username and profile_pic_url for the user (based on the user_id found in recipe.created_by)
-
-    // Example of what the page needs:
-    // "recipe_id": 1234,
-    // "title": "Spaghetti Bolognese",
-    // "description": "A classic Italian pasta dish with a rich meat sauce.",
-    // // Instructions are in a string separated by "|"                             
-    // "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
-    // "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
-    // "created_by": "123456",
-    // "created_at": "2023-10-01T12:00:00Z",
-    // "public": true,
-    // "image_url": "/static/images/placeholders/placeholder_meal.png"
-    // "username": "user123",
-    // "profile_pic_url": "/static/images/placeholders/placeholder_user.png"
-    res.cookie('theme', 'light'); // Set the theme cookie
-
     try {
         // Get current user ID from the session (if logged in)
         const currentUserId = req.session.userId || null;
@@ -243,7 +223,87 @@ app.get('/', async (req, res) => {
         });
     } catch (err) {
         console.error(err);
-        res.status(500).send("Error fetching recipes");
+        res.status(500).render("pages/home", {
+            loggedIn: isLoggedIn(req),
+            username: req.session ? req.session.username : null,
+            recipes: recipes,
+            theme: req.cookies.theme != null ? req.cookies.theme : 'light',
+            session: req.session,  // Pass session so templates can access current user info.
+            error: true,
+            message: 'Error fetching recipes',
+        });
+    }
+});
+
+
+app.get('/search', async (req, res) => {
+
+    try {
+        // Get current user ID from the session (if logged in)
+        const currentUserId = req.session.userId || null;
+
+        const searchUsername = "%" + req.query.user + "%";
+        const tag1 = req.query.tag1;
+        const tag2 = req.query.tag2;
+        const tag3 = req.query.tag3;
+
+        // Query to get all public recipes, along with the creator's info,
+        // like count, and a flag indicating if the current user liked the recipe.
+        const recipes = await db.any(`
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   r.created_by, -- Include created_by for linking profiles
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.public = true
+            ${searchUsername ? 'AND u.username ILIKE $2' : ''}
+            ORDER BY r.created_at DESC
+        `, [currentUserId, searchUsername]);
+
+        if (recipes.length === 0) {
+            res.render("pages/home", {
+                loggedIn: isLoggedIn(req),
+                username: req.session ? req.session.username : null,
+                recipes: recipes,
+                filter: req.query,
+                theme: req.cookies.theme != null ? req.cookies.theme : 'light',
+                session: req.session,  // Pass session so templates can access current user info.
+                error: true,
+                message: 'No recipes found for the given search criteria.',
+            });
+        } else {
+            // Render the home page with the recipes fetched from the database.
+            res.render("pages/home", {
+                loggedIn: isLoggedIn(req),
+                username: req.session ? req.session.username : null,
+                recipes: recipes,
+                filter: req.query,
+                theme: req.cookies.theme != null ? req.cookies.theme : 'light',
+                session: req.session  // Pass session so templates can access current user info.
+            });
+        }
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/home", {
+            loggedIn: isLoggedIn(req),
+            username: req.session ? req.session.username : null,
+            recipes: recipes,
+            filter: req.query,
+            theme: req.cookies.theme != null ? req.cookies.theme : 'light',
+            session: req.session,  // Pass session so templates can access current user info.
+            error: true,
+            message: 'Error fetching recipes',
+        });
     }
 });
 
@@ -357,7 +417,7 @@ app.post('/register', async (req, res) => {
             'SELECT user_id, username, password FROM users WHERE username = $1',
             [username]
         );
-        
+
         await db.none(
             'INSERT INTO grocery_lists (user_id) VALUES ($1)',
             [user.user_id]
@@ -524,7 +584,7 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
         }
         console.log('out of if')
         const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
-        
+
         console.log('query1');
 
         const userQuery = 'SELECT user_id from users WHERE username = $1';
@@ -536,12 +596,19 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
             RETURNING recipe_id;
         `;
         console.log(userId.user_id);
+        // Clean up ingredients: remove empty entries and trim spaces
+        const cleanedIngredients = ingredients
+            .split(',')
+            .map(s => s.trim())
+            .filter(s => s.length > 0)
+            .join(',');
+
         const values = [
             recipeName.trim(),
             description?.trim() || '',
             duration,
             instructions.trim(),
-            ingredients.trim(),
+            cleanedIngredients,
             privacy === 'true',
             image_url,
             userId.user_id
@@ -660,56 +727,56 @@ app.get('/my_recipes', async (req, res) => {
         return res.status(401).send("Unauthorized");
     }
     console.log('my_recipes')
-    try{
+    try {
         const recipesList = await db.query(
             'SELECT * FROM recipes WHERE created_by = $1 ORDER BY created_at DESC',
             [req.session.userId]
         );
         console.log('Recipes List:', recipesList);
-          console.log('Recipes List Rows:', recipesList.rows);
-        res.render('pages/my_recipes',{
+        console.log('Recipes List Rows:', recipesList.rows);
+        res.render('pages/my_recipes', {
             recipes: recipesList,
             loggedIn: true,
             username: req.session.username
         })
     }
-    catch(err){
+    catch (err) {
         console.error(err);
         res.status(500).send("Something went wrong. Reload the website or try again later.")
     }
 });
 
 app.post('/my_recipes', async (req, res) => {
-  try {
-    const userId = req.session.userId;
-    const sortOption = req.body.sort_by;
+    try {
+        const userId = req.session.userId;
+        const sortOption = req.body.sort_by;
 
-    let orderBy = 'r.created_at DESC'; // default
+        let orderBy = 'r.created_at DESC'; // default
 
-    if (sortOption === 'ascPost') orderBy = 'r.created_at ASC';
-    else if (sortOption === 'descPost') orderBy = 'r.created_at DESC';
-    else if (sortOption === 'ascTime') orderBy = 'r.duration ASC';
-    else if (sortOption === 'descTime') orderBy = 'r.duration DESC';
-    else if (sortOption === 'ascIngredients') orderBy = 'r.ingredients ASC';
-    else if (sortOption === 'descIngredients') orderBy = 'r.ingredients DESC';
-    else if (sortOption === 'ascLikes') orderBy = 'like_count ASC';
-    else if (sortOption === 'descLikes') orderBy = 'like_count DESC';
+        if (sortOption === 'ascPost') orderBy = 'r.created_at ASC';
+        else if (sortOption === 'descPost') orderBy = 'r.created_at DESC';
+        else if (sortOption === 'ascTime') orderBy = 'r.duration ASC';
+        else if (sortOption === 'descTime') orderBy = 'r.duration DESC';
+        else if (sortOption === 'ascIngredients') orderBy = 'r.ingredients ASC';
+        else if (sortOption === 'descIngredients') orderBy = 'r.ingredients DESC';
+        else if (sortOption === 'ascLikes') orderBy = 'like_count ASC';
+        else if (sortOption === 'descLikes') orderBy = 'like_count DESC';
 
-    const recipes = await db.query(
-      `SELECT r.*, COUNT(l.like_id) AS like_count
+        const recipes = await db.query(
+            `SELECT r.*, COUNT(l.like_id) AS like_count
        FROM recipes r
        LEFT JOIN likes l ON r.recipe_id = l.recipe_id
        WHERE r.created_by = $1
        GROUP BY r.recipe_id
        ORDER BY ${orderBy}`,
-      [userId]
-    );
+            [userId]
+        );
 
-    res.json({ recipes: recipes.rows });
-  } catch (err) {
-    console.error('Error in POST /my_recipes:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+        res.json({ recipes: recipes.rows });
+    } catch (err) {
+        console.error('Error in POST /my_recipes:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 
@@ -761,7 +828,10 @@ app.post('/list/addItem', async (req, res) => {
         );
 
         ///console.log(req.body.ingredient);
-        var newIngredients = req.body.ingredient.split(",");
+        var newIngredients = req.body.ingredient
+            .split(",")
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
 
         // TODO Query Kroger API and find the price of the ingredient
         // For now, let's just set it to 0.00
@@ -795,7 +865,7 @@ app.post('/list/addItem', async (req, res) => {
         });
     }
 
-    
+
 });
 
 
@@ -830,7 +900,7 @@ app.post('/list/removeItem', async (req, res) => {
         });
     }
 
-    
+
 });
 
 // Onboarding Page
