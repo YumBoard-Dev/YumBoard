@@ -58,10 +58,10 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
     console.log('Created uploads directory');
 }
-    
-    // This allows serving static files from the uploads directory
-    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-    
+
+// This allows serving static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -102,31 +102,31 @@ const multer = require('multer');
 
 // Configure storage
 const storage = multer.diskStorage({
-destination: function(req, file, cb) {
-cb(null, 'uploads/'); // Destination folder
-},
-filename: function(req, file, cb) {
-// Create unique filename with original extension
-cb(null, Date.now() + '-' + file.originalname);
-}
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/'); // Destination folder
+    },
+    filename: function (req, file, cb) {
+        // Create unique filename with original extension
+        cb(null, Date.now() + '-' + file.originalname);
+    }
 });
 
 // Set up file filter if you want to restrict file types
 const fileFilter = (req, file, cb) => {
-if (file.mimetype.startsWith('image/')) {
-cb(null, true);
-} else {
-cb(new Error('Not an image! Please upload only images.'), false);
-}
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Not an image! Please upload only images.'), false);
+    }
 };
 
 // Initialize upload middleware
 const upload = multer({
-storage: storage,
-limits: {
-fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
-},
-fileFilter: fileFilter
+    storage: storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5 // Limit file size to 5MB
+    },
+    fileFilter: fileFilter
 });
 
 
@@ -141,13 +141,14 @@ Handlebars.registerHelper('lookup', function (obj, field) {
 
 
 // Add helper to convert a timestamp to local time
-Handlebars.registerHelper('localTime', function(timestamp) {
+Handlebars.registerHelper('localTime', function (timestamp) {
     return new Handlebars.SafeString(new Date(timestamp).toLocaleString());
 });
 
-Handlebars.registerHelper('isDarkMode', function (str) {
-    return str == 'dark';
+Handlebars.registerHelper('isDarkMode', function (str, options) {
+    return str == 'dark' ? options.fn(this) : options.inverse(this);
 });
+
 
 // *****************************************************
 // <!-- Section 4 : API Routes -->
@@ -266,7 +267,7 @@ app.post('/login', async (req, res) => {
 
     try {
         const user = await db.oneOrNone(
-            'SELECT user_id, username, password FROM users WHERE username = $1',
+            'SELECT * FROM users WHERE username = $1',
             [username]
         );
 
@@ -285,7 +286,7 @@ app.post('/login', async (req, res) => {
             // Set both userId and username
             req.session.userId = user.user_id;
             req.session.username = username;
-            console.log(username);
+            // console.log(username);
             // Save session and wait for completion
             await new Promise((resolve, reject) => {
                 req.session.save((error) => {
@@ -297,6 +298,7 @@ app.post('/login', async (req, res) => {
                     }
                 });
             }).then(() => {
+                console.log(user);
                 res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
                 console.log('User logged in successfully:', username);
                 return res.redirect('/');
@@ -357,13 +359,13 @@ app.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         await db.none(
-            'INSERT INTO users (username, password, prefers_dark_mode) VALUES ($1, $2, FALSE)',
+            'INSERT INTO users (username, password) VALUES ($1, $2)',
             [username, hashedPassword]
         );
 
         // Get User ID to log in
         let user = await db.one( // TODO Might be able to get normal insert to return the user entry
-            'SELECT user_id, username, password FROM users WHERE username = $1',
+            'SELECT * FROM users WHERE username = $1',
             [username]
         );
 
@@ -460,7 +462,8 @@ app.get('/profile', async (req, res) => {
                 username: user.username,
                 profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
             },
-            username: user.username
+            username: user.username,
+            theme: prefersDarkMode(req)
         });
     } catch (err) {
         console.error(err);
@@ -468,6 +471,7 @@ app.get('/profile', async (req, res) => {
             loggedIn: isLoggedIn(req),
             error: true,
             message: 'Error retrieving profile information',
+            theme: prefersDarkMode(req)
         });
     }
 });
@@ -481,11 +485,14 @@ app.get('/logout', (req, res) => {
             console.error(err);
             return res.status(500).send('Error logging out.');
         }
+
+        // Clear the theme cookie
+        res.clearCookie('theme');
         res.status(200).render("pages/login", {
             loggedIn: isLoggedIn(req),
             error: false,
             message: 'Logged out successfully.',
-            theme: prefersDarkMode(req)
+            theme: 'light',
         });
     });
 });
@@ -601,7 +608,7 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
         }
         console.log('out of if')
         const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
-        
+
         console.log('query1');
 
         const userQuery = 'SELECT user_id from users WHERE username = $1';
@@ -792,7 +799,9 @@ app.get('/list', async (req, res) => {
 
         res.status(200).render("pages/grocery_list", {
             loggedIn: isLoggedIn(req),
-            ingredients: ingredients
+            ingredients: ingredients,
+            theme: prefersDarkMode(req)
+
         });
 
 
@@ -803,6 +812,8 @@ app.get('/list', async (req, res) => {
             loggedIn: isLoggedIn(req),
             error: true,
             message: 'Error retrieving grocery list',
+            theme: prefersDarkMode(req)
+
         });
     }
 
@@ -918,11 +929,11 @@ app.get('/settings', async (req, res) => {
             message: 'Error retrieving user settings. Please reload the page to try again...',
         });
     }
+});
 
 
-    // res.render("pages/grocery_list", {
-    //     loggedIn: isLoggedIn(req),
-    // });
+app.get('/settings/update', async (req, res) => {
+    res.status(200).redirect('/settings');
 });
 
 
@@ -943,14 +954,15 @@ app.post('/settings/update', async (req, res) => {
         res.cookie('theme', req.body.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
 
 
-        // res.status(200).redirect("/settings");
-        res.status(200).render("pages/settings", {
-            loggedIn: isLoggedIn(req),
-            theme: prefersDarkMode(req)
-        });
+        res.status(200).redirect("/settings/update");
+        // res.status(200).redirect('back');
+        // res.status(200).render("pages/settings", {
+        //     loggedIn: isLoggedIn(req),
+        //     theme: req.body.prefers_dark_mode ? 'dark' : 'light'
+        // });
 
         console.log("User settings updated successfully:", user.username);
-        
+
     } catch (err) {
         console.error(err);
         res.status(500).render("pages/settings", {
