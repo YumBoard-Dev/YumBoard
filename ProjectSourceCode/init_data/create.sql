@@ -33,7 +33,9 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     profile_pic_url TEXT DEFAULT '/static/images/placeholders/placeholder_profile.png',
-    bio TEXT DEFAULT 'This user has not added a bio yet.'
+    bio TEXT DEFAULT 'This user has not added a bio yet.',
+    prefers_dark_mode BOOLEAN DEFAULT FALSE NOT NULL -- User preference for dark mode
+
 );
 
 -------------------------------------------------
