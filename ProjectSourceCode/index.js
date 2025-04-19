@@ -558,7 +558,6 @@ app.use(auth);
 
 
 app.get('/post_recipe', (req, res) => {
-    console.log(req.session.user_id)
     res.render("pages/post_recipe", {
         loggedIn: isLoggedIn(req),
     })
@@ -569,7 +568,6 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
         const { recipeName, description, duration, instructions, ingredients, privacy } = req.body;
 
         // Server-side validation
-        console.log('here');
         if (
             typeof recipeName !== 'string' || recipeName.trim() === '' ||
             typeof instructions !== 'string' || instructions.trim() === '' ||
@@ -577,15 +575,12 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
             !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(duration) || // strict HH:MM format
             (privacy !== 'true' && privacy !== 'false')
         ) {
-            console.log('if');
             return res.status(400).render('pages/post_recipe', {
                 error: "Please fill in all required fields with valid input.",
             });
         }
-        console.log('out of if')
         const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
 
-        console.log('query1');
 
         const userQuery = 'SELECT user_id from users WHERE username = $1';
         const userId = await db.one(userQuery, [req.session.username]);
@@ -595,7 +590,6 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
             VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
             RETURNING recipe_id;
         `;
-        console.log(userId.user_id);
         // Clean up ingredients: remove empty entries and trim spaces
         const cleanedIngredients = ingredients
             .split(',')
