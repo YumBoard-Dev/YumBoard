@@ -679,6 +679,40 @@ app.get('/my_recipes', async (req, res) => {
     }
 });
 
+app.post('/my_recipes', async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const sortOption = req.body.sort_by;
+
+    let orderBy = 'r.created_at DESC'; // default
+
+    if (sortOption === 'ascPost') orderBy = 'r.created_at ASC';
+    else if (sortOption === 'descPost') orderBy = 'r.created_at DESC';
+    else if (sortOption === 'ascTime') orderBy = 'r.duration ASC';
+    else if (sortOption === 'descTime') orderBy = 'r.duration DESC';
+    else if (sortOption === 'ascIngredients') orderBy = 'r.ingredients ASC';
+    else if (sortOption === 'descIngredients') orderBy = 'r.ingredients DESC';
+    else if (sortOption === 'ascLikes') orderBy = 'like_count ASC';
+    else if (sortOption === 'descLikes') orderBy = 'like_count DESC';
+
+    const recipes = await db.query(
+      `SELECT r.*, COUNT(l.like_id) AS like_count
+       FROM recipes r
+       LEFT JOIN likes l ON r.recipe_id = l.recipe_id
+       WHERE r.created_by = $1
+       GROUP BY r.recipe_id
+       ORDER BY ${orderBy}`,
+      [userId]
+    );
+
+    res.json({ recipes: recipes.rows });
+  } catch (err) {
+    console.error('Error in POST /my_recipes:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 app.get('/list', async (req, res) => {
 
     try {
