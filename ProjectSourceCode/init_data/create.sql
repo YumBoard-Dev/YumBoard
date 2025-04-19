@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    profile_pic_url TEXT DEFAULT '/static/images/placeholders/placeholder_profile.png'
+    profile_pic_url TEXT DEFAULT '/static/images/placeholders/placeholder_profile.png',
+    bio TEXT DEFAULT 'This user has not added a bio yet.'
 );
 
 -------------------------------------------------
@@ -97,7 +98,7 @@ VALUES
     'spaghetti, ground beef, onions, garlic, tomato sauce',
     1,
     true,
-    '/static/images/placeholders/placeholder_meal.png'
+    '/uploads/danijela-prijovic-qits91IZv1o-unsplash.jpg'
 ),
 (
     'Vegan Buddha Bowl', 
@@ -106,7 +107,7 @@ VALUES
     'quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic',
     2,
     true,
-    '/static/images/placeholders/placeholder_meal.png'
+    '/uploads/martin-baron-PBgbIbOsprk-unsplash.jpg'
 );
 
 
