@@ -574,10 +574,9 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             repliesMap,
             loggedIn: isLoggedIn(req),
             username: req.session.username,
-
-            // ─── PASS IT INTO YOUR TEMPLATE ──────────
+            theme: prefersDarkMode(req),
             estimatedCost,
-            // ─────────────────────────────────────────
+            
         });
 
     } catch (err) {
