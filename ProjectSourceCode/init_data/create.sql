@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
+    profile_pic_url TEXT DEFAULT '/static/images/placeholders/placeholder_profile.png',
     prefers_dark_mode BOOLEAN DEFAULT FALSE NOT NULL -- User preference for dark mode
-    profile_pic_url TEXT,
 );
 
 -------------------------------------------------
@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   instructions TEXT,                                 -- Step-by-step cooking instructions
   ingredients TEXT,                                  -- Comma-separated ingredient list as text
   created_by INT NOT NULL,                           -- FK to users table
+  duration INTERVAL,                                 -- Time it takes to make the recipe
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Time recipe was posted/created
   public BOOLEAN DEFAULT TRUE,                       -- Whether the recipe is visible to others
   image_url VARCHAR(300),                            -- Optional URL to an image of the recipe
@@ -84,8 +85,8 @@ CREATE TABLE IF NOT EXISTS comments (
 
 -- First, ensure that you have some test users
 INSERT INTO users (username, password, profile_pic_url) VALUES 
-('user123', 'hashed_password1', '/static/images/placeholders/placeholder_user.png'),
-('user456', 'hashed_password2', '/static/images/placeholders/placeholder_user.png');
+('user123', 'hashed_password1', '/static/images/placeholders/placeholder_profile_1.jpg'),
+('user456', 'hashed_password2', '/static/images/placeholders/placeholder_profile_2.jpg');
 
 -- Then, insert example recipes. Make sure that created_by references an existing user_id.
 INSERT INTO recipes (title, description, instructions, ingredients, created_by, public, image_url)
@@ -97,7 +98,7 @@ VALUES
     'spaghetti, ground beef, onions, garlic, tomato sauce',
     1,
     true,
-    '/static/images/placeholders/placeholder_meal.png'
+    '/uploads/danijela-prijovic-qits91IZv1o-unsplash.jpg'
 ),
 (
     'Vegan Buddha Bowl', 
@@ -106,7 +107,7 @@ VALUES
     'quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic',
     2,
     true,
-    '/static/images/placeholders/placeholder_meal.png'
+    '/uploads/martin-baron-PBgbIbOsprk-unsplash.jpg'
 );
 
 
