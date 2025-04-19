@@ -1,4 +1,9 @@
 <div class="container width-100 display-flex justify-content-center" style="margin-top: 20px;">
+  <h1>My Recipes</h1>
+  <label for="sort">Sort my recipes</label>
+  <select id="sort" onchange="sortRecipes()">
+    
+  </select>
     {{#each recipes}}
     <div class="row p-2 display-flex justify-content-center">
         <div class="card p-3 recipe-card" style="width: 50rem;">
@@ -38,7 +43,7 @@
                               {{#ifEquals duration.hours 1}}1 hour{{else}}{{duration.hours}} hours{{/ifEquals}}
                               {{/if}}
                               {{#if duration.minutes}}
-                                  {{#if duration.hours}}, {{/if}}{{duration.minutes}} minutes
+                                  {{#if duration.hours}} {{/if}}{{duration.minutes}} minutes
                               {{/if}}
                             </p>
                         </div>
