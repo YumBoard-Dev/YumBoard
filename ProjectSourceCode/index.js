@@ -445,10 +445,14 @@ app.post('/post_recipe', (req, res) => {
 app.get('/profile', async (req, res) => {
     if (!req.session.userId) {
         return res.redirect('/login');
-
     }
-    res.status(401).render('pages/login', { error: 'Please log in to post a recipe.' });
-}
+
+    try {
+        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
 
         res.render("pages/profile", {
             loggedIn: isLoggedIn(req),
@@ -456,12 +460,15 @@ app.get('/profile', async (req, res) => {
                 username: user.username,
                 profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
             },
-            username: user.username,
-            theme: prefersDarkMode(req)
+            username: user.username
         });
     } catch (err) {
         console.error(err);
-        res.status(500).send("Error retrieving profile information");
+        res.status(500).render("pages/login", {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving profile information',
+        });
     }
 });
 
