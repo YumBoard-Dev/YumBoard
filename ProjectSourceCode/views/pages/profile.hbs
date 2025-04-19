@@ -3,51 +3,36 @@
 </head>
 
 <div class="profile-container">
-  <h2>My Profile</h2>
+  <h2>{{user.username}}'s Profile</h2>
   <div class="profile-card">
     <div class="profile-picture">
-      <img id="profile-img" src="{{user.profile_pic_url}}" alt="Profile Picture" />
+      <img src="{{user.profile_pic_url}}" alt="Profile Picture">
     </div>
-
     <div class="profile-info">
-      <p><strong>Username:</strong> <span id="display-username">{{user.username}}</span></p>
-
-      <div class="edit-form hidden" id="edit-form">
-        <label for="edit-username">Username:</label>
-        <input type="text" id="edit-username" name="edit-username" value="{{user.username}}" />
-
-        <label for="edit-profile-pic">Profile Picture URL:</label>
-        <input type="text" id="edit-profile-pic" name="edit-profile-pic" value="{{user.profile_pic_url}}" />
-      </div>
-
-      <div class="profile-buttons">
-        <button id="edit-btn">Edit</button>
-        <button id="save-btn" class="hidden">Save Changes</button>
-        <button id="cancel-btn" class="hidden">Cancel Changes</button>
-      </div>
+      <p><strong>Bio:</strong> {{user.bio}}</p>
+      {{#if isOwner}}
+      <form action="/profile/edit" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="currentProfilePic" value="{{user.profile_pic_url}}">
+        <div class="mb-3">
+          <label for="profilePic" class="form-label">Change Profile Picture</label>
+          <input type="file" class="form-control" id="profilePic" name="profilePic">
+        </div>
+        <div class="mb-3">
+          <label for="bio" class="form-label">Edit Bio</label>
+          <textarea class="form-control" id="bio" name="bio" rows="3">{{user.bio}}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </form>
+      {{/if}}
     </div>
   </div>
+  <h3>Posts</h3>
+  <div class="posts">
+    {{#each recipes}}
+    <div class="post">
+      <h4><a href="/recipes/{{recipe_id}}">{{title}}</a></h4>
+      <p>{{description}}</p>
+    </div>
+    {{/each}}
+  </div>
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const editBtn = document.getElementById('edit-btn');
-    const saveBtn = document.getElementById('save-btn');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const editForm = document.getElementById('edit-form');
-
-    editBtn.addEventListener('click', () => {
-      editForm.classList.remove('hidden');
-      saveBtn.classList.remove('hidden');
-      cancelBtn.classList.remove('hidden');
-      editBtn.classList.add('hidden');
-    });
-
-    cancelBtn.addEventListener('click', () => {
-      editForm.classList.add('hidden');
-      saveBtn.classList.add('hidden');
-      cancelBtn.classList.add('hidden');
-      editBtn.classList.remove('hidden');
-    });
-  });
-</script>

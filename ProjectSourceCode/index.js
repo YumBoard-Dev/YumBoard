@@ -111,13 +111,14 @@ cb(null, Date.now() + '-' + file.originalname);
 }
 });
 
-// Set up file filter if you want to restrict file types
+// Update file filter to restrict file types
 const fileFilter = (req, file, cb) => {
-if (file.mimetype.startsWith('image/')) {
-cb(null, true);
-} else {
-cb(new Error('Not an image! Please upload only images.'), false);
-}
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'), false);
+    }
 };
 
 // Initialize upload middleware
@@ -213,6 +214,7 @@ app.get('/', async (req, res) => {
             SELECT r.*, 
                    u.username, 
                    u.profile_pic_url,
+                   r.created_by, -- Include created_by for linking profiles
                    COALESCE(l.like_count, 0) AS like_count,
                    CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
             FROM recipes r
@@ -375,7 +377,7 @@ app.post('/register', async (req, res) => {
             });
         }).then(() => {
             console.log('User registered successfully:', username);
-            return res.status(200).redirect('/');
+            return res.status(200).redirect('/onboarding');
         });
 
     } catch (error) {
@@ -779,9 +781,108 @@ app.post('/list/removeItem', async (req, res) => {
 
     
 });
- 
 
+// Onboarding Page
+app.get('/onboarding', (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+    res.render('pages/onboarding', { loggedIn: true });
+});
 
+app.post('/onboarding', upload.single('profilePic'), async (req, res) => {
+    try {
+        const bio = req.body.bio || 'This user has not added a bio yet.';
+        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_profile.png';
+
+        await db.none(
+            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
+            [bio, profilePicUrl, req.session.userId]
+        );
+
+        // Redirect to the home page after onboarding
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.status(500).render('pages/onboarding', {
+            error: 'An error occurred during onboarding. Please try again.',
+        });
+    }
+});
+
+// Profile Page
+app.get('/profile/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
+
+        const recipes = await db.any(
+            'SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)',
+            [userId, req.session.userId]
+        );
+
+        const isOwner = req.session.userId == userId;
+
+        res.render('pages/profile', {
+            user,
+            recipes,
+            isOwner,
+            loggedIn: isLoggedIn(req),
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error loading profile.');
+    }
+});
+
+// Redirect `/profile` to `/profile/:userId` for the logged-in user
+app.get('/profile', (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+    res.redirect(`/profile/${req.session.userId}`);
+});
+
+// Public User Profile
+app.get('/users/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        // If the user is viewing their own profile, redirect to `/profile/:userId`
+        if (req.session.userId == userId) {
+            return res.redirect(`/profile/${userId}`);
+        }
+
+        const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
+        const recipes = await db.any('SELECT * FROM recipes WHERE created_by = $1 AND public = true', [userId]);
+
+        res.render('pages/profile', {
+            user,
+            recipes,
+            isOwner: false,
+            loggedIn: isLoggedIn(req),
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(404).send('User not found.');
+    }
+});
+
+// Edit Profile
+app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+
+    try {
+        const bio = req.body.bio || 'This user has not added a bio yet.';
+        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : req.body.currentProfilePic;
+
+        await db.none(
+            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
+            [bio, profilePicUrl, req.session.userId]
+        );
+
+        res.redirect(`/profile/${req.session.userId}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error updating profile.');
+    }
+});
 
 // starting the server and keeping the connection open to listen for more requests
 module.exports = app.listen(3000);
