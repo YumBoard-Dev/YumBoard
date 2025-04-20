@@ -1,73 +1,67 @@
 <div class="container width-100 h-100 display-flex justify-content-center" style="margin-top: 20px;">
-    {{>alert}}
-    <div class="row p-2 display-flex justify-content-center">
-        <div class="card p-3" style="width: 50rem;">
+  {{>alert}}
+  <div class="row p-2 display-flex justify-content-center">
+    <div class="card p-3" style="width: 50rem;">
 
-            <div class="card-body">
-                <div class="m-3">
-                    <h4 class="card-title">{{title}}</h4>
-                    <p class="card-text">{{description}}</p>
-                </div>
-
-                <table class="table" data-toggle="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Ingredient Name</th>
-                            <th scope="col">Cost</th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="ingredientsList">
-                        {{#each ingredients}}
-                        <tr>
-                            <td>{{ingredient_text}}</td>
-                            <td>${{cost}}</td>
-                            <td>
-                                <form id="removeIngredient" action="/list/removeItem" method="post">
-                                    <input type="hidden" name="ingredient_text" value="{{ingredient_text}}" />
-                                    <btn type="submit" class="icon-btn" onclick="this.parentNode.submit();">
-                                        <i class="bi bi-x-lg"></i>
-                                    </btn>
-                                </form>
-                            </td>
-                        </tr>
-                        {{/each}}
-                        <hr />
-
-                        <tr>
-                            <th>Total cost</th>
-                            <th>$0.00</th>
-                            
-                        </tr>
-
-                    </tbody>
-                </table>
-
-
-                <form id="addIngredient" action="/list/addItem" method="post">
-                    <div class="mb-3">
-                        <textarea name="ingredient" class="form-control" placeholder="Ingredient" required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-secondary">Add</button>
-                </form>
-
-
-
-            </div>
+      <div class="card-body">
+        <div class="m-3">
+          <h4 class="card-title">{{title}}</h4>
+          <p class="card-text">{{description}}</p>
         </div>
+
+        <table class="table" data-toggle="table">
+          <thead>
+            <tr>
+              <th scope="col">Ingredient Name</th>
+              <th scope="col">Cost</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody id="ingredientsList">
+            {{#each ingredients}}
+            <tr>
+              <td>{{ingredient_text}}</td>
+              <td>${{cost}}</td>
+              <td>
+                <form id="removeIngredient" action="/list/removeItem" method="post">
+                  <input type="hidden" name="ingredient_text" value="{{ingredient_text}}" />
+                  <button type="submit" class="icon-btn">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {{/each}}
+
+            <tr>
+              <th>Total cost</th>
+              <th>${{totalCost}}</th>
+              <th></th>
+            </tr>
+
+          </tbody>
+        </table>
+
+        <form id="addIngredient" action="/list/addItem" method="post">
+          <div class="mb-3">
+            <textarea name="ingredient" class="form-control" placeholder="Ingredient" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-secondary">Add</button>
+        </form>
+
+      </div>
     </div>
+  </div>
 
+  <script>
+    /*var el = document.getElementById('ingredientsList');
+    var sortable = Sortable.create(el, { onUpdate: onUpdate });
 
-    <script>
-        /*var el = document.getElementById('ingredientsList');
-        var sortable = Sortable.create(el, { onUpdate: onUpdate });
+    function onUpdate(event) {
+      console.log(event.to.childNodes.filter((child) => {
 
-        function onUpdate(event) {
-            console.log(event.to.childNodes.filter((child) => {
-
-            }));
-        }*/
-    </script>
-
+      }));
+    }*/
+  </script>
 
 </div>
