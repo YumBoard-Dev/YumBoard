@@ -27,12 +27,5 @@
     </div>
   </div>
   <h3>Posts</h3>
-  <div class="posts">
-    {{#each recipes}}
-    <div class="post">
-      <h4><a href="/recipes/{{recipe_id}}">{{title}}</a></h4>
-      <p>{{description}}</p>
-    </div>
-    {{/each}}
-  </div>
+  {{> my_recipes}}
 </div>
