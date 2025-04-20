@@ -143,10 +143,6 @@ Handlebars.registerHelper('lookup', function (obj, field) {
 });
 
 
-Handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
-    return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
-});
-
 
 // Add helper to convert a timestamp to local time
 Handlebars.registerHelper('localTime', function (timestamp) {

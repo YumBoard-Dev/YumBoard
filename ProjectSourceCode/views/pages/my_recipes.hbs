@@ -1,4 +1,16 @@
-<div class="container width-100 display-flex justify-content-center" style="margin-top: 20px;">
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Instructions</th>
+      <th>Ingredients</th>
+      <th>Duration</th>
+      <th>Image</th>
+    </tr>
+  </thead>
+  <tbody>
   <h1>My Recipes</h1>
   <label for="sort">Sort my recipes</label>
   <select id="sort" onchange="sortRecipes()">
@@ -43,7 +55,7 @@
                               {{#ifEquals duration.hours 1}}1 hour{{else}}{{duration.hours}} hours{{/ifEquals}}
                               {{/if}}
                               {{#if duration.minutes}}
-                                  {{#if duration.hours}} {{/if}}{{duration.minutes}} minutes
+                                  {{#if duration.hours}}, {{/if}}{{duration.minutes}} minutes
                               {{/if}}
                             </p>
                         </div>
@@ -53,6 +65,5 @@
         </div>
     </div>
     {{/each}}
-
-    {{> filtersFloatingButton }}
-</div>
+  </tbody>
+</table>
