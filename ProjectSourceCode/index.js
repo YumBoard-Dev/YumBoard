@@ -115,13 +115,14 @@ const storage = multer.diskStorage({
 
 // Update file filter to restrict file types
 const fileFilter = (req, file, cb) => {
-  
+
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
         cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'), false);
-}};
+    }
+};
 
 // Initialize upload middleware
 const upload = multer({
@@ -529,12 +530,6 @@ app.get('/profile/:userId', async (req, res) => {
         const userId = req.params.userId;
         const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
 
-
-        if(req.session.userId == userId) {
-
-        }
-
-
         // const recipes = await db.any(
         //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
         //     [userId, req.session.userId]
@@ -572,7 +567,7 @@ app.get('/profile/:userId', async (req, res) => {
         });
     } catch (err) {
         console.error(err);
-        res.status(500).render("pages/login", {
+        res.status(500).render("pages/profile", {
             loggedIn: isLoggedIn(req),
             error: true,
             message: 'Error loading profile',
@@ -666,19 +661,19 @@ app.get('/recipes/:recipe_id', async (req, res) => {
         // ─── INSERT ESTIMATED COST LOGIC HERE ───────────────────────────
         // 1) Turn comma‑delimited string into an array of trimmed terms
         const ingredients = recipe.ingredients
-          .split(',')
-          .map(i => i.trim())
-          .filter(Boolean);
+            .split(',')
+            .map(i => i.trim())
+            .filter(Boolean);
 
         // 2) Fetch each price in parallel (priceFor comes from services/kroger.js)
         const prices = await Promise.all(
-          ingredients.map(ing => priceFor(ing).catch(() => 0))
+            ingredients.map(ing => priceFor(ing).catch(() => 0))
         );
 
         // 3) Sum them and format as a two‑dec place string
         const estimatedCost = prices
-          .reduce((sum, p) => sum + p, 0)
-          .toFixed(2);
+            .reduce((sum, p) => sum + p, 0)
+            .toFixed(2);
         // ────────────────────────────────────────────────────────────────
 
         res.render('pages/recipe', {
@@ -690,7 +685,7 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             username: req.session.username,
             theme: prefersDarkMode(req),
             estimatedCost,
-            
+
         });
 
     } catch (err) {
@@ -784,7 +779,6 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
 
 
 
-
 // Onboarding Page
 app.get('/onboarding', (req, res) => {
     if (!isLoggedIn(req)) return res.redirect('/login');
@@ -829,8 +823,85 @@ app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
         res.redirect(`/profile/${req.session.userId}`);
     } catch (err) {
         console.error(err);
-        res.status(500).send('Error updating profile.');
+        res.status(500).render('pages/profile', {
+            user,
+            recipes,
+            isOwner: true,
+            loggedIn: isLoggedIn(req),
+            theme: prefersDarkMode(req),
+            error: true,
+            message: 'Error updating profile.',
+        });
     }
+});
+
+
+app.post('/profile/delete', async (req, res) => {
+    try {
+
+        await db.none(
+            'DELETE FROM recipes WHERE recipe_id = $1 AND created_by = $2',
+            [req.body.recipe_id, req.session.userId]
+        ).then(async () => {
+
+        //     const userId = req.params.userId;
+        //     const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
+
+        //     // const recipes = await db.any(
+        //     //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
+        //     //     [userId, req.session.userId]
+        //     // );
+        //     const recipes = await db.any(
+        //         `
+        //     SELECT r.*, 
+        //            u.username, 
+        //            u.profile_pic_url,
+        //            r.created_by, -- Include created_by for linking profiles
+        //            COALESCE(l.like_count, 0) AS like_count,
+        //            CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+        //     FROM recipes r
+        //     LEFT JOIN users u ON r.created_by = u.user_id
+        //     LEFT JOIN (
+        //         SELECT recipe_id, COUNT(*) AS like_count
+        //         FROM likes
+        //         GROUP BY recipe_id
+        //     ) l ON r.recipe_id = l.recipe_id
+        //     LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+        //     WHERE r.created_by = $1 AND (r.public = true OR r.created_by = $2)
+        //     ORDER BY r.created_at DESC
+        // `,
+        //         [userId, req.session.userId]
+        //     );
+
+        //     const isOwner = req.session.userId == userId;
+
+        //     res.render('pages/profile', {
+        //         user,
+        //         recipes,
+        //         isOwner,
+        //         loggedIn: isLoggedIn(req),
+        //         theme: prefersDarkMode(req),
+        //         error: false,
+        //         message: 'Recipe deleted successfully.',
+        //     });
+
+
+            res.redirect(`/profile/${req.session.userId}`);
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render('pages/profile', {
+            user,
+            recipes,
+            isOwner,
+            loggedIn: isLoggedIn(req),
+            theme: prefersDarkMode(req),
+            error: true,
+            message: 'Problem deleting recipe',
+        });
+    }
+
 });
 
 
@@ -1014,138 +1085,138 @@ app.post('/my_recipes', async (req, res) => {
 // ─── Grocery List Route───────────────────────────
 app.get('/list', async (req, res) => {
     try {
-      // list id
-      const { list_id } = await db.one(
-        'SELECT list_id FROM grocery_lists WHERE user_id = $1',
-        [req.session.userId]
-      );
-  
-      // read text
-      const items = await db.any(
-        'SELECT ingredient_text FROM list_ingredients WHERE list_id = $1',
-        [list_id]
-      );
-  
-      // get prices for each ingredient
-      const ingredients = await Promise.all(
-        items.map(async ({ ingredient_text }) => {
-          let rawPrice = 0;
-          try {
-            rawPrice = await priceFor(ingredient_text);
-          } catch (err) {
-            console.error(`[LIST] priceFor ERROR for "${ingredient_text}":`, err.message);
-          }
-  
-          const formatted = Number(rawPrice).toFixed(2);
-          console.log(`[LIST] "${ingredient_text}" → raw: ${rawPrice}  formatted: $${formatted}`);
-          return { ingredient_text, cost: formatted };
-        })
-      );
-  
-      // total price of ingred
-      const totalCost = ingredients
-        .reduce((sum, { cost }) => sum + parseFloat(cost), 0)
-        .toFixed(2);
-  
-      console.log('[LIST] final ingredients array:', ingredients);
-      console.log('[LIST] totalCost = $' + totalCost);
-  
-      // rendering
-      res.render('pages/grocery_list', {
-        loggedIn: isLoggedIn(req),
-        ingredients,
-        totalCost,
-        theme: prefersDarkMode(req)
-      });
+        // list id
+        const { list_id } = await db.one(
+            'SELECT list_id FROM grocery_lists WHERE user_id = $1',
+            [req.session.userId]
+        );
+
+        // read text
+        const items = await db.any(
+            'SELECT ingredient_text FROM list_ingredients WHERE list_id = $1',
+            [list_id]
+        );
+
+        // get prices for each ingredient
+        const ingredients = await Promise.all(
+            items.map(async ({ ingredient_text }) => {
+                let rawPrice = 0;
+                try {
+                    rawPrice = await priceFor(ingredient_text);
+                } catch (err) {
+                    console.error(`[LIST] priceFor ERROR for "${ingredient_text}":`, err.message);
+                }
+
+                const formatted = Number(rawPrice).toFixed(2);
+                console.log(`[LIST] "${ingredient_text}" → raw: ${rawPrice}  formatted: $${formatted}`);
+                return { ingredient_text, cost: formatted };
+            })
+        );
+
+        // total price of ingred
+        const totalCost = ingredients
+            .reduce((sum, { cost }) => sum + parseFloat(cost), 0)
+            .toFixed(2);
+
+        console.log('[LIST] final ingredients array:', ingredients);
+        console.log('[LIST] totalCost = $' + totalCost);
+
+        // rendering
+        res.render('pages/grocery_list', {
+            loggedIn: isLoggedIn(req),
+            ingredients,
+            totalCost,
+            theme: prefersDarkMode(req)
+        });
     } catch (err) {
-      console.error('[LIST] fatal error', err);
-      res.status(500).render('pages/grocery_list', {
-        loggedIn: isLoggedIn(req),
-        error: true,
-        message: 'Error retrieving grocery list',
-        theme: prefersDarkMode(req)
-      });
+        console.error('[LIST] fatal error', err);
+        res.status(500).render('pages/grocery_list', {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error retrieving grocery list',
+            theme: prefersDarkMode(req)
+        });
     }
-  });
-  
-  
-  // ─── POST /list/addItem ───────────────────────────
-  app.post('/list/addItem', async (req, res) => {
+});
+
+
+// ─── POST /list/addItem ───────────────────────────
+app.post('/list/addItem', async (req, res) => {
     try {
 
-      // find list
-      const { list_id } = await db.one(
-        `SELECT list_id
+        // find list
+        const { list_id } = await db.one(
+            `SELECT list_id
            FROM grocery_lists
           WHERE user_id = $1`,
-        [req.session.userId]
-      );
-  
-      // split + dedupe
-      const newIngredients = Array.from(
-        new Set(
-          req.body.ingredient
-            .split(',')
-            .map(i => i.trim())
-            .filter(i => !!i)
-        )
-      );
-  
-      // for each new ingredient: look up its Kroger price, then insert or update
-      for (let ingredient of newIngredients) {
-        const price = await priceFor(ingredient).catch(() => 0);
-        await db.none(
-          `INSERT INTO list_ingredients (list_id, ingredient_text, cost)
+            [req.session.userId]
+        );
+
+        // split + dedupe
+        const newIngredients = Array.from(
+            new Set(
+                req.body.ingredient
+                    .split(',')
+                    .map(i => i.trim())
+                    .filter(i => !!i)
+            )
+        );
+
+        // for each new ingredient: look up its Kroger price, then insert or update
+        for (let ingredient of newIngredients) {
+            const price = await priceFor(ingredient).catch(() => 0);
+            await db.none(
+                `INSERT INTO list_ingredients (list_id, ingredient_text, cost)
              VALUES ($1, $2, $3)
           ON CONFLICT (list_id, ingredient_text)
             DO UPDATE SET cost = EXCLUDED.cost`,
-          [list_id, ingredient, price.toFixed(2)]
-        );
-      }
-  
-      res.redirect('/list');
-  
+                [list_id, ingredient, price.toFixed(2)]
+            );
+        }
+
+        res.redirect('/list');
+
     } catch (err) {
-      console.error('POST /list/addItem error', err);
-      res.status(500).render('pages/grocery_list', {
-        loggedIn: isLoggedIn(req),
-        error: true,
-        message: 'Error adding to grocery list'
-      });
+        console.error('POST /list/addItem error', err);
+        res.status(500).render('pages/grocery_list', {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error adding to grocery list'
+        });
     }
-  });
-  
-  
-  // ─── POST /list/removeItem ────────────────────────
-  app.post('/list/removeItem', async (req, res) => {
+});
+
+
+// ─── POST /list/removeItem ────────────────────────
+app.post('/list/removeItem', async (req, res) => {
     try {
-      // find their list
-      const { list_id } = await db.one(
-        `SELECT list_id
+        // find their list
+        const { list_id } = await db.one(
+            `SELECT list_id
            FROM grocery_lists
           WHERE user_id = $1`,
-        [req.session.userId]
-      );
-  
-      // delete the single ingredient
-      await db.none(
-        `DELETE
+            [req.session.userId]
+        );
+
+        // delete the single ingredient
+        await db.none(
+            `DELETE
            FROM list_ingredients
           WHERE list_id = $1
             AND ingredient_text = $2`,
-        [list_id, req.body.ingredient_text]
-      );
-  
-      res.redirect('/list');
-  
+            [list_id, req.body.ingredient_text]
+        );
+
+        res.redirect('/list');
+
 
     } catch (err) {
-      console.error('POST /list/removeItem error', err);
-      res.status(500).render('pages/grocery_list', {
-        loggedIn: isLoggedIn(req),
-        error: true,
-        message: 'Error removing item'
-      });
+        console.error('POST /list/removeItem error', err);
+        res.status(500).render('pages/grocery_list', {
+            loggedIn: isLoggedIn(req),
+            error: true,
+            message: 'Error removing item'
+        });
     }
 });
 
