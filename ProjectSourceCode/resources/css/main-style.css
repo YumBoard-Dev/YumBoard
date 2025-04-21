@@ -52,6 +52,14 @@ footer {
 }
 
 
+.navbar-profile {
+    margin: 0px;
+    padding: 0px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+}
+
 
 
  
