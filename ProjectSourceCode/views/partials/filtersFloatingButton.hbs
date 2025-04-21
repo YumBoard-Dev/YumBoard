@@ -22,14 +22,6 @@
                 server
                 and get the new recipe list.
             </p>
-            <p>
-                Note: More work might be needed to keep filter options selected when the page is rerendered. Also,
-                filter by
-                tags.
-            </p>
-            <p>
-                Using checkboxes like this isn't the prettiest, but it's functional at least.
-            </p>
         </div>
 
         <hr />
@@ -38,28 +30,56 @@
             <div class="vstack gap-3" style="margin-left: 10px;">
                 <div class="mb-3">
                     <label for="exampleFormControlInput1" class="form-label">Filter by User</label>
-                    <input type="text" class="form-control" id="exampleFormControlInput1" placeholder="Username">
+                    <input type="text" class="form-control" id="search-user" placeholder="Username" value="{{filter.user}}" onchange="userChange()">
                 </div>
                 <div>
-                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                    <input class="form-check-input" type="checkbox" value="" id="Tag1">
                     <label class="form-check-label" for="flexCheckDefault">
                         Tag 1
                     </label>
                 </div>
                 <div>
-                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault1">
+                    <input class="form-check-input" type="checkbox" value="" id="Tag2">
                     <label class="form-check-label" for="flexCheckDefault">
                         Tag 2
                     </label>
                 </div>
                 <div>
-                    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault2">
+                    <input class="form-check-input" type="checkbox" value="" id="Tag3">
                     <label class="form-check-label" for="flexCheckDefault">
                         Tag 3
                     </label>
                 </div>
-                <button class="form-control btn btn-primary" style="width: 100px;" type="submit">Search</button>
+                <button class="form-control btn btn-primary" style="width: 100px;" onclick="searchRecipes()">Search</button>
             </div>
         </div>
     </div>
 </div>
+
+
+<script>
+    var filterForm = document.getElementById('filter-form');
+
+   var user = "";
+
+   function userChange() {
+        user = document.getElementById('search-user').value;
+        console.log(user);
+    }
+
+    //var user = document.getElementById('search-user').value;
+    var tag1 = document.getElementById('Tag1').checked;
+    var tag2 = document.getElementById('Tag2').checked;
+    var tag3 = document.getElementById('Tag3').checked;
+
+    console.log(user);
+    
+    function searchRecipes() {
+        // Redirect to /recipes with the search parameters
+        var url = '/search?user=' + encodeURIComponent(user) +
+            '&tag1=' + encodeURIComponent(tag1) +
+            '&tag2=' + encodeURIComponent(tag2) +
+            '&tag3=' + encodeURIComponent(tag3);
+        window.location.href = url;
+    }
+</script>

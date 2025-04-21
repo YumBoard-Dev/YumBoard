@@ -113,14 +113,15 @@ const storage = multer.diskStorage({
     }
 });
 
-// Set up file filter if you want to restrict file types
+// Update file filter to restrict file types
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+  
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('Not an image! Please upload only images.'), false);
-    }
-};
+        cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'), false);
+}};
 
 // Initialize upload middleware
 const upload = multer({
@@ -139,6 +140,11 @@ Handlebars.registerHelper("getCommaDelimitedCount", function (text) {
 
 Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
+});
+
+
+Handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
+    return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
 });
 
 
@@ -194,25 +200,6 @@ function prefersDarkMode(req) {
 
 app.get('/', async (req, res) => {
 
-    // TODO Make a query to the database to get the recipes relevant to the user
-    // Make sure the query includes: 
-    // 1. All values for a recipe row in the database
-    // 2. username and profile_pic_url for the user (based on the user_id found in recipe.created_by)
-
-    // Example of what the page needs:
-    // "recipe_id": 1234,
-    // "title": "Spaghetti Bolognese",
-    // "description": "A classic Italian pasta dish with a rich meat sauce.",
-    // // Instructions are in a string separated by "|"                             
-    // "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
-    // "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
-    // "created_by": "123456",
-    // "created_at": "2023-10-01T12:00:00Z",
-    // "public": true,
-    // "image_url": "/static/images/placeholders/placeholder_meal.png"
-    // "username": "user123",
-    // "profile_pic_url": "/static/images/placeholders/placeholder_user.png"
-
     try {
         // Get current user ID from the session (if logged in)
         const currentUserId = req.session.userId || null;
@@ -223,6 +210,7 @@ app.get('/', async (req, res) => {
             SELECT r.*, 
                    u.username, 
                    u.profile_pic_url,
+                   r.created_by, -- Include created_by for linking profiles
                    COALESCE(l.like_count, 0) AS like_count,
                    CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
             FROM recipes r
@@ -246,7 +234,87 @@ app.get('/', async (req, res) => {
         });
     } catch (err) {
         console.error(err);
-        res.status(500).send("Error fetching recipes");
+        res.status(500).render("pages/home", {
+            loggedIn: isLoggedIn(req),
+            username: req.session ? req.session.username : null,
+            recipes: recipes,
+            theme: req.cookies.theme != null ? req.cookies.theme : 'light',
+            session: req.session,  // Pass session so templates can access current user info.
+            error: true,
+            message: 'Error fetching recipes',
+        });
+    }
+});
+
+
+app.get('/search', async (req, res) => {
+
+    try {
+        // Get current user ID from the session (if logged in)
+        const currentUserId = req.session.userId || null;
+
+        const searchUsername = "%" + req.query.user + "%";
+        const tag1 = req.query.tag1;
+        const tag2 = req.query.tag2;
+        const tag3 = req.query.tag3;
+
+        // Query to get all public recipes, along with the creator's info,
+        // like count, and a flag indicating if the current user liked the recipe.
+        const recipes = await db.any(`
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   r.created_by, -- Include created_by for linking profiles
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.public = true
+            ${searchUsername ? 'AND u.username ILIKE $2' : ''}
+            ORDER BY r.created_at DESC
+        `, [currentUserId, searchUsername]);
+
+        if (recipes.length === 0) {
+            res.render("pages/home", {
+                loggedIn: isLoggedIn(req),
+                username: req.session ? req.session.username : null,
+                recipes: recipes,
+                filter: req.query,
+                theme: req.cookies.theme != null ? req.cookies.theme : 'light',
+                session: req.session,  // Pass session so templates can access current user info.
+                error: true,
+                message: 'No recipes found for the given search criteria.',
+            });
+        } else {
+            // Render the home page with the recipes fetched from the database.
+            res.render("pages/home", {
+                loggedIn: isLoggedIn(req),
+                username: req.session ? req.session.username : null,
+                recipes: recipes,
+                filter: req.query,
+                theme: req.cookies.theme != null ? req.cookies.theme : 'light',
+                session: req.session  // Pass session so templates can access current user info.
+            });
+        }
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render("pages/home", {
+            loggedIn: isLoggedIn(req),
+            username: req.session ? req.session.username : null,
+            recipes: recipes,
+            filter: req.query,
+            theme: req.cookies.theme != null ? req.cookies.theme : 'light',
+            session: req.session,  // Pass session so templates can access current user info.
+            error: true,
+            message: 'Error fetching recipes',
+        });
     }
 });
 
@@ -395,7 +463,7 @@ app.post('/register', async (req, res) => {
         }).then(() => {
             res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
             console.log('User registered successfully:', username);
-            return res.status(200).redirect('/');
+            return res.status(200).redirect('/onboarding');
         });
 
     } catch (error) {
@@ -421,82 +489,170 @@ app.post('/register', async (req, res) => {
 
 
 app.get('/post_recipe', (req, res) => {
+    console.log(req.session.user_id)
     res.render("pages/post_recipe", {
         loggedIn: isLoggedIn(req),
-        theme: prefersDarkMode(req)
     })
 });
 
-app.post('/post_recipe', (req, res) => {
-    var recipeName = req.body.recipeName;
-    var description = req.body.description;
-    var time = req.body.duration;
-    var instructions = req.body.instructions;
+app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
+    try {
+        const { recipeName, description, duration, instructions, ingredients, privacy } = req.body;
 
-    res.render("pages/post_recipe", {
-        recipeName: recipeName,
-        description: description,
-        time: time,
-        instructions: instructions,
-        loggedIn: isLoggedIn(req),
-        message: "Recipe posted successfully! Name: " + recipeName,
-        error: false,
-        theme: prefersDarkMode(req)
-    });
-})
+        // Server-side validation
+        console.log('here');
+        if (
+            typeof recipeName !== 'string' || recipeName.trim() === '' ||
+            typeof instructions !== 'string' || instructions.trim() === '' ||
+            typeof ingredients !== 'string' || ingredients.trim() === '' ||
+            !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(duration) || // strict HH:MM format
+            (privacy !== 'true' && privacy !== 'false')
+        ) {
+            console.log('if');
+            return res.status(400).render('pages/post_recipe', {
+                error: "Please fill in all required fields with valid input.",
+            });
+        }
+        console.log('out of if')
+        const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
+
+        console.log('query1');
+
+        const userQuery = 'SELECT user_id from users WHERE username = $1';
+        const userId = await db.one(userQuery, [req.session.username]);
+
+        const query = `
+            INSERT INTO recipes(title, description, duration, instructions, ingredients, public, image_url, created_by, created_at)
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            RETURNING recipe_id;
+        `;
+        console.log(userId.user_id);
+        // Clean up ingredients: remove empty entries and trim spaces
+        const cleanedIngredients = ingredients
+            .split(',')
+            .map(s => s.trim())
+            .filter(s => s.length > 0)
+            .join(',');
+
+        const values = [
+            recipeName.trim(),
+            description?.trim() || '',
+            duration,
+            instructions.trim(),
+            cleanedIngredients,
+            privacy === 'true',
+            image_url,
+            userId.user_id
+        ];
+
+        const result = await db.one(query, values);
+
+        // Log the details before rendering the page
+        console.log("Recipe Name: " + recipeName + ", Description: " + description + ", Time: " + duration + ", Instructions: " + instructions + ", Logged In: " + isLoggedIn(req) + ", Message: Recipe posted successfully! Name: " + recipeName + ", Error: " + false);
+
+        return res.redirect(`/recipes/${result.recipe_id}`);
+    } catch (err) {
+        console.error("Error posting recipe:", err);
+        return res.status(500).render('pages/post_recipe', {
+            error: "An unexpected error occurred while posting your recipe.",
+        });
+    }
+});
 
 // ------------------- Profile Page -------------------
-app.get('/profile', async (req, res) => {
-    if (!req.session.userId) {
-        return res.redirect('/login');
-    }
+// app.get('/profile', async (req, res) => {
+//     if (!req.session.userId) {
+//         return res.redirect('/login');
+//     }
 
+//     try {
+//         const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+//         if (!user) {
+//             return res.status(404).send("User not found");
+//         }
+
+//         res.render("pages/profile", {
+//             loggedIn: isLoggedIn(req),
+//             user: {
+//                 username: user.username,
+//                 profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
+//             },
+//             username: user.username,
+//             theme: prefersDarkMode(req)
+//         });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).render("pages/login", {
+//             loggedIn: isLoggedIn(req),
+//             error: true,
+//             message: 'Error retrieving profile information',
+//             theme: prefersDarkMode(req)
+//         });
+//     }
+// });
+
+// Profile Page
+app.get('/profile/:userId', async (req, res) => {
     try {
-        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+        const userId = req.params.userId;
+        const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
 
-        if (!user) {
-            return res.status(404).send("User not found");
-        }
+        const recipes = await db.any(
+            'SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)',
+            [userId, req.session.userId]
+        );
 
-        res.render("pages/profile", {
+        const isOwner = req.session.userId == userId;
+
+        res.render('pages/profile', {
+            user,
+            recipes,
+            isOwner,
             loggedIn: isLoggedIn(req),
-            user: {
-                username: user.username,
-                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
-            },
-            username: user.username,
-            theme: prefersDarkMode(req)
+            theme: prefersDarkMode(req),
         });
     } catch (err) {
         console.error(err);
         res.status(500).render("pages/login", {
             loggedIn: isLoggedIn(req),
             error: true,
-            message: 'Error retrieving profile information',
+            message: 'Error loading profile',
             theme: prefersDarkMode(req)
         });
     }
 });
 
+// Redirect `/profile` to `/profile/:userId` for the logged-in user
+app.get('/profile', (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+    res.redirect(`/profile/${req.session.userId}`);
+});
 
-// ------------------- Logout -------------------
+// Public User Profile
+app.get('/users/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
 
-app.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send('Error logging out.');
+        // If the user is viewing their own profile, redirect to `/profile/:userId`
+        if (req.session.userId == userId) {
+            return res.redirect(`/profile/${userId}`);
         }
 
-        // Clear the theme cookie
-        res.clearCookie('theme');
-        res.status(200).render("pages/login", {
+        const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
+        const recipes = await db.any('SELECT * FROM recipes WHERE created_by = $1 AND public = true', [userId]);
+
+        res.render('pages/profile', {
+            user,
+            recipes,
+            isOwner: false,
             loggedIn: isLoggedIn(req),
-            error: false,
-            message: 'Logged out successfully.',
-            theme: 'light',
         });
-    });
+    } catch (err) {
+        console.error(err);
+        res.status(404).send('User not found.');
+    }
+
 });
 
 
@@ -605,7 +761,6 @@ app.use(auth);
 
 
 app.get('/post_recipe', (req, res) => {
-    console.log(req.session.user_id)
     res.render("pages/post_recipe", {
         loggedIn: isLoggedIn(req),
     })
@@ -616,7 +771,6 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
         const { recipeName, description, duration, instructions, ingredients, privacy } = req.body;
 
         // Server-side validation
-        console.log('here');
         if (
             typeof recipeName !== 'string' || recipeName.trim() === '' ||
             typeof instructions !== 'string' || instructions.trim() === '' ||
@@ -624,15 +778,11 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
             !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(duration) || // strict HH:MM format
             (privacy !== 'true' && privacy !== 'false')
         ) {
-            console.log('if');
             return res.status(400).render('pages/post_recipe', {
                 error: "Please fill in all required fields with valid input.",
             });
         }
-        console.log('out of if')
         const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
-
-        console.log('query1');
 
         const userQuery = 'SELECT user_id from users WHERE username = $1';
         const userId = await db.one(userQuery, [req.session.username]);
@@ -642,13 +792,19 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
             VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
             RETURNING recipe_id;
         `;
-        console.log('values');
+        // Clean up ingredients: remove empty entries and trim spaces
+        const cleanedIngredients = ingredients
+            .split(',')
+            .map(s => s.trim())
+            .filter(s => s.length > 0)
+            .join(',');
+
         const values = [
             recipeName.trim(),
             description?.trim() || '',
             duration,
             instructions.trim(),
-            ingredients.trim(),
+            cleanedIngredients,
             privacy === 'true',
             image_url,
             userId.user_id
@@ -658,16 +814,6 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
 
         // Log the details before rendering the page
         console.log("Recipe Name: " + recipeName + ", Description: " + description + ", Time: " + duration + ", Instructions: " + instructions + ", Logged In: " + isLoggedIn(req) + ", Message: Recipe posted successfully! Name: " + recipeName + ", Error: " + false);
-
-        res.render("pages/post_recipe", {
-            recipeName: recipeName,
-            description: description,
-            time: duration,
-            instructions: instructions,
-            loggedIn: isLoggedIn(req),
-            message: "Recipe posted successfully! Name: " + recipeName,
-            error: false,
-        });
 
         return res.redirect(`/recipes/${result.recipe_id}`);
     } catch (err) {
@@ -679,36 +825,10 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
 });
 
 
-// ------------------- Profile Page -------------------
-app.get('/profile', async (req, res) => {
-    if (!req.session.userId) {
-        return res.redirect('/login');
-    }
 
-    try {
-        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
 
-        if (!user) {
-            return res.status(404).send("User not found");
-        }
 
-        res.render("pages/profile", {
-            loggedIn: isLoggedIn(req),
-            user: {
-                username: user.username,
-                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
-            },
-            username: user.username
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).render("pages/login", {
-            loggedIn: isLoggedIn(req),
-            error: true,
-            message: 'Error retrieving profile information',
-        });
-    }
-});
+
 
 
 
@@ -720,10 +840,14 @@ app.get('/logout', (req, res) => {
             console.error(err);
             return res.status(500).send('Error logging out.');
         }
+
+        // Clear the theme cookie
+        res.clearCookie('theme');
         res.status(200).render("pages/login", {
             loggedIn: isLoggedIn(req),
             error: false,
             message: 'Logged out successfully.',
+            theme: 'light',
         });
     });
 });
@@ -804,6 +928,63 @@ app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
     }
 });
 
+app.get('/my_recipes', async (req, res) => {
+    if (!isLoggedIn(req)) {
+        return res.status(401).send("Unauthorized");
+    }
+    console.log('my_recipes')
+    try {
+        const recipesList = await db.query(
+            'SELECT * FROM recipes WHERE created_by = $1 ORDER BY created_at DESC',
+            [req.session.userId]
+        );
+        console.log('Recipes List:', recipesList);
+        console.log('Recipes List Rows:', recipesList.rows);
+        res.render('pages/my_recipes', {
+            recipes: recipesList,
+            loggedIn: true,
+            username: req.session.username
+        })
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send("Something went wrong. Reload the website or try again later.")
+    }
+});
+
+app.post('/my_recipes', async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const sortOption = req.body.sort_by;
+
+        let orderBy = 'r.created_at DESC'; // default
+
+        if (sortOption === 'ascPost') orderBy = 'r.created_at ASC';
+        else if (sortOption === 'descPost') orderBy = 'r.created_at DESC';
+        else if (sortOption === 'ascTime') orderBy = 'r.duration ASC';
+        else if (sortOption === 'descTime') orderBy = 'r.duration DESC';
+        else if (sortOption === 'ascIngredients') orderBy = 'r.ingredients ASC';
+        else if (sortOption === 'descIngredients') orderBy = 'r.ingredients DESC';
+        else if (sortOption === 'ascLikes') orderBy = 'like_count ASC';
+        else if (sortOption === 'descLikes') orderBy = 'like_count DESC';
+
+        const recipes = await db.query(
+            `SELECT r.*, COUNT(l.like_id) AS like_count
+       FROM recipes r
+       LEFT JOIN likes l ON r.recipe_id = l.recipe_id
+       WHERE r.created_by = $1
+       GROUP BY r.recipe_id
+       ORDER BY ${orderBy}`,
+            [userId]
+        );
+
+        res.json({ recipes: recipes.rows });
+    } catch (err) {
+        console.error('Error in POST /my_recipes:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 
 // ─── Grocery List Route───────────────────────────
 app.get('/list', async (req, res) => {
@@ -866,6 +1047,7 @@ app.get('/list', async (req, res) => {
   // ─── POST /list/addItem ───────────────────────────
   app.post('/list/addItem', async (req, res) => {
     try {
+
       // find list
       const { list_id } = await db.one(
         `SELECT list_id
@@ -1013,9 +1195,55 @@ app.post('/settings/update', async (req, res) => {
         });
     }
 
-
 });
 
+// Onboarding Page
+app.get('/onboarding', (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+    res.render('pages/onboarding', { loggedIn: true });
+});
+
+app.post('/onboarding', upload.single('profilePic'), async (req, res) => {
+    try {
+        const bio = req.body.bio || 'This user has not added a bio yet.';
+        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_profile.png';
+
+        await db.none(
+            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
+            [bio, profilePicUrl, req.session.userId]
+        );
+
+        // Redirect to the home page after onboarding
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.status(500).render('pages/onboarding', {
+            error: 'An error occurred during onboarding. Please try again.',
+        });
+    }
+});
+
+
+
+// Edit Profile
+app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+
+    try {
+        const bio = req.body.bio || 'This user has not added a bio yet.';
+        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : req.body.currentProfilePic;
+
+        await db.none(
+            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
+            [bio, profilePicUrl, req.session.userId]
+        );
+
+        res.redirect(`/profile/${req.session.userId}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error updating profile.');
+    }
+});
 
 // starting the server and keeping the connection open to listen for more requests
 module.exports = app.listen(3000);
