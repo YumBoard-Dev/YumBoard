@@ -488,76 +488,7 @@ app.post('/register', async (req, res) => {
 
 
 
-app.get('/post_recipe', (req, res) => {
-    console.log(req.session.user_id)
-    res.render("pages/post_recipe", {
-        loggedIn: isLoggedIn(req),
-    })
-});
 
-app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
-    try {
-        const { recipeName, description, duration, instructions, ingredients, privacy } = req.body;
-
-        // Server-side validation
-        console.log('here');
-        if (
-            typeof recipeName !== 'string' || recipeName.trim() === '' ||
-            typeof instructions !== 'string' || instructions.trim() === '' ||
-            typeof ingredients !== 'string' || ingredients.trim() === '' ||
-            !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(duration) || // strict HH:MM format
-            (privacy !== 'true' && privacy !== 'false')
-        ) {
-            console.log('if');
-            return res.status(400).render('pages/post_recipe', {
-                error: "Please fill in all required fields with valid input.",
-            });
-        }
-        console.log('out of if')
-        const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
-
-        console.log('query1');
-
-        const userQuery = 'SELECT user_id from users WHERE username = $1';
-        const userId = await db.one(userQuery, [req.session.username]);
-
-        const query = `
-            INSERT INTO recipes(title, description, duration, instructions, ingredients, public, image_url, created_by, created_at)
-            VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-            RETURNING recipe_id;
-        `;
-        console.log(userId.user_id);
-        // Clean up ingredients: remove empty entries and trim spaces
-        const cleanedIngredients = ingredients
-            .split(',')
-            .map(s => s.trim())
-            .filter(s => s.length > 0)
-            .join(',');
-
-        const values = [
-            recipeName.trim(),
-            description?.trim() || '',
-            duration,
-            instructions.trim(),
-            cleanedIngredients,
-            privacy === 'true',
-            image_url,
-            userId.user_id
-        ];
-
-        const result = await db.one(query, values);
-
-        // Log the details before rendering the page
-        console.log("Recipe Name: " + recipeName + ", Description: " + description + ", Time: " + duration + ", Instructions: " + instructions + ", Logged In: " + isLoggedIn(req) + ", Message: Recipe posted successfully! Name: " + recipeName + ", Error: " + false);
-
-        return res.redirect(`/recipes/${result.recipe_id}`);
-    } catch (err) {
-        console.error("Error posting recipe:", err);
-        return res.status(500).render('pages/post_recipe', {
-            error: "An unexpected error occurred while posting your recipe.",
-        });
-    }
-});
 
 // ------------------- Profile Page -------------------
 // app.get('/profile', async (req, res) => {
@@ -598,8 +529,35 @@ app.get('/profile/:userId', async (req, res) => {
         const userId = req.params.userId;
         const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
 
+
+        if(req.session.userId == userId) {
+
+        }
+
+
+        // const recipes = await db.any(
+        //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
+        //     [userId, req.session.userId]
+        // );
         const recipes = await db.any(
-            'SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)',
+            `
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   r.created_by, -- Include created_by for linking profiles
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.created_by = $1 AND (r.public = true OR r.created_by = $2)
+            ORDER BY r.created_at DESC
+        `,
             [userId, req.session.userId]
         );
 
@@ -827,6 +785,53 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
 
 
 
+// Onboarding Page
+app.get('/onboarding', (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+    res.render('pages/onboarding', { loggedIn: true });
+});
+
+app.post('/onboarding', upload.single('profilePic'), async (req, res) => {
+    try {
+        const bio = req.body.bio || 'This user has not added a bio yet.';
+        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_profile.png';
+
+        await db.none(
+            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
+            [bio, profilePicUrl, req.session.userId]
+        );
+
+        // Redirect to the home page after onboarding
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.status(500).render('pages/onboarding', {
+            error: 'An error occurred during onboarding. Please try again.',
+        });
+    }
+});
+
+
+
+// Edit Profile
+app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+
+    try {
+        const bio = req.body.bio || 'This user has not added a bio yet.';
+        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : req.body.currentProfilePic;
+
+        await db.none(
+            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
+            [bio, profilePicUrl, req.session.userId]
+        );
+
+        res.redirect(`/profile/${req.session.userId}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error updating profile.');
+    }
+});
 
 
 
@@ -932,10 +937,30 @@ app.get('/my_recipes', async (req, res) => {
     if (!isLoggedIn(req)) {
         return res.status(401).send("Unauthorized");
     }
-    console.log('my_recipes')
+    // console.log('my_recipes')
     try {
+
+        var filter = req.query.filter || "";
+
+
         const recipesList = await db.query(
-            'SELECT * FROM recipes WHERE created_by = $1 ORDER BY created_at DESC',
+            `
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.recipe_id = $1
+            ORDER BY r.created_at DESC
+        `,
             [req.session.userId]
         );
         console.log('Recipes List:', recipesList);
@@ -1197,53 +1222,6 @@ app.post('/settings/update', async (req, res) => {
 
 });
 
-// Onboarding Page
-app.get('/onboarding', (req, res) => {
-    if (!isLoggedIn(req)) return res.redirect('/login');
-    res.render('pages/onboarding', { loggedIn: true });
-});
-
-app.post('/onboarding', upload.single('profilePic'), async (req, res) => {
-    try {
-        const bio = req.body.bio || 'This user has not added a bio yet.';
-        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_profile.png';
-
-        await db.none(
-            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
-            [bio, profilePicUrl, req.session.userId]
-        );
-
-        // Redirect to the home page after onboarding
-        res.redirect('/');
-    } catch (err) {
-        console.error(err);
-        res.status(500).render('pages/onboarding', {
-            error: 'An error occurred during onboarding. Please try again.',
-        });
-    }
-});
-
-
-
-// Edit Profile
-app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
-    if (!isLoggedIn(req)) return res.redirect('/login');
-
-    try {
-        const bio = req.body.bio || 'This user has not added a bio yet.';
-        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : req.body.currentProfilePic;
-
-        await db.none(
-            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
-            [bio, profilePicUrl, req.session.userId]
-        );
-
-        res.redirect(`/profile/${req.session.userId}`);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error updating profile.');
-    }
-});
 
 // starting the server and keeping the connection open to listen for more requests
 module.exports = app.listen(3000);
