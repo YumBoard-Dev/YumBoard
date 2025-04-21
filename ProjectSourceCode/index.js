@@ -195,6 +195,11 @@ function prefersDarkMode(req) {
     return req.cookies.theme != null ? req.cookies.theme : 'light';
 }
 
+function getProfilePicURL(req) {
+    console.log(req.cookies);
+    return req.cookies.profile_picture_url != null ? req.cookies.profile_picture_url : "/static/images/placeholders/placeholder_profile.png";
+}
+
 
 
 // ------------------- Home  -------------------
@@ -229,6 +234,7 @@ app.get('/', async (req, res) => {
         // Render the home page with the recipes fetched from the database.
         res.render("pages/home", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             username: req.session ? req.session.username : null,
             recipes: recipes,
             theme: prefersDarkMode(req),
@@ -237,6 +243,8 @@ app.get('/', async (req, res) => {
         console.error(err);
         res.status(500).render("pages/home", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             username: req.session ? req.session.username : null,
             recipes: recipes,
             theme: req.cookies.theme != null ? req.cookies.theme : 'light',
@@ -284,6 +292,7 @@ app.get('/search', async (req, res) => {
         if (recipes.length === 0) {
             res.render("pages/home", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 username: req.session ? req.session.username : null,
                 recipes: recipes,
                 filter: req.query,
@@ -296,6 +305,8 @@ app.get('/search', async (req, res) => {
             // Render the home page with the recipes fetched from the database.
             res.render("pages/home", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
+                theme: prefersDarkMode(req),
                 username: req.session ? req.session.username : null,
                 recipes: recipes,
                 filter: req.query,
@@ -308,6 +319,8 @@ app.get('/search', async (req, res) => {
         console.error(err);
         res.status(500).render("pages/home", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             username: req.session ? req.session.username : null,
             recipes: recipes,
             filter: req.query,
@@ -325,7 +338,8 @@ app.get('/search', async (req, res) => {
 app.get('/login', (req, res) => {
     res.render("pages/login", {
         loggedIn: isLoggedIn(req),
-        theme: prefersDarkMode(req)
+        theme: prefersDarkMode(req),
+        profile_picture: getProfilePicURL(req),
     });
 });
 
@@ -345,6 +359,7 @@ app.post('/login', async (req, res) => {
         if (!user) {
             return res.status(400).render("pages/login", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 error: true,
                 message: 'Invalid username or password.',
                 theme: prefersDarkMode(req)
@@ -371,6 +386,7 @@ app.post('/login', async (req, res) => {
             }).then(() => {
                 console.log(user);
                 res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+                res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
                 console.log('User logged in successfully:', username);
                 return res.redirect('/');
             })
@@ -378,6 +394,7 @@ app.post('/login', async (req, res) => {
         } else {
             return res.status(400).render("pages/login", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 error: true,
                 message: 'Invalid username or password.',
                 theme: prefersDarkMode(req)
@@ -387,6 +404,7 @@ app.post('/login', async (req, res) => {
         console.error(error);
         return res.status(500).render("pages/login", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Error logging in: ' + error.message,
             theme: prefersDarkMode(req)
@@ -400,6 +418,7 @@ app.post('/login', async (req, res) => {
 app.get('/register', (req, res) => {
     res.render("pages/register", {
         loggedIn: isLoggedIn(req),
+        profile_picture: getProfilePicURL(req),
         theme: prefersDarkMode(req)
     });
 });
@@ -412,6 +431,7 @@ app.post('/register', async (req, res) => {
     if (!username || !password) {
         return res.status(400).render("pages/register", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Please enter a valid username and password.',
             theme: prefersDarkMode(req)
@@ -420,6 +440,7 @@ app.post('/register', async (req, res) => {
     if (!passwordRegex.test(password)) {
         return res.status(400).render("pages/register", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Password must be 8-15 characters long, include at least one lowercase letter, one uppercase letter, and one special character.',
             theme: prefersDarkMode(req)
@@ -463,6 +484,7 @@ app.post('/register', async (req, res) => {
             });
         }).then(() => {
             res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+            res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
             console.log('User registered successfully:', username);
             return res.status(200).redirect('/onboarding');
         });
@@ -472,6 +494,7 @@ app.post('/register', async (req, res) => {
         if (error.code === '23505') {
             return res.status(400).render("pages/register", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 error: true,
                 message: 'Username already exists',
                 theme: prefersDarkMode(req)
@@ -479,6 +502,7 @@ app.post('/register', async (req, res) => {
         } else {
             return res.status(500).render("pages/register", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 error: true,
                 message: 'An error occurred: ' + error.message,
                 theme: prefersDarkMode(req)
@@ -563,12 +587,14 @@ app.get('/profile/:userId', async (req, res) => {
             recipes,
             isOwner,
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             theme: prefersDarkMode(req),
         });
     } catch (err) {
         console.error(err);
         res.status(500).render("pages/profile", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Error loading profile',
             theme: prefersDarkMode(req)
@@ -600,6 +626,8 @@ app.get('/users/:userId', async (req, res) => {
             recipes,
             isOwner: false,
             loggedIn: isLoggedIn(req),
+            theme: prefersDarkMode(req),
+            profile_picture: getProfilePicURL(req),
         });
     } catch (err) {
         console.error(err);
@@ -682,6 +710,7 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             comments: rootComments,
             repliesMap,
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             username: req.session.username,
             theme: prefersDarkMode(req),
             estimatedCost,
@@ -716,6 +745,8 @@ app.use(auth);
 app.get('/post_recipe', (req, res) => {
     res.render("pages/post_recipe", {
         loggedIn: isLoggedIn(req),
+        profile_picture: getProfilePicURL(req),
+        theme: prefersDarkMode(req),
     })
 });
 
@@ -782,7 +813,11 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
 // Onboarding Page
 app.get('/onboarding', (req, res) => {
     if (!isLoggedIn(req)) return res.redirect('/login');
-    res.render('pages/onboarding', { loggedIn: true });
+    res.render('pages/onboarding', {
+        loggedIn: true,
+        profile_picture: getProfilePicURL(req),
+        theme: prefersDarkMode(req),
+    });
 });
 
 app.post('/onboarding', upload.single('profilePic'), async (req, res) => {
@@ -828,6 +863,7 @@ app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
             recipes,
             isOwner: true,
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             theme: prefersDarkMode(req),
             error: true,
             message: 'Error updating profile.',
@@ -844,46 +880,46 @@ app.post('/profile/delete', async (req, res) => {
             [req.body.recipe_id, req.session.userId]
         ).then(async () => {
 
-        //     const userId = req.params.userId;
-        //     const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
+            //     const userId = req.params.userId;
+            //     const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
 
-        //     // const recipes = await db.any(
-        //     //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
-        //     //     [userId, req.session.userId]
-        //     // );
-        //     const recipes = await db.any(
-        //         `
-        //     SELECT r.*, 
-        //            u.username, 
-        //            u.profile_pic_url,
-        //            r.created_by, -- Include created_by for linking profiles
-        //            COALESCE(l.like_count, 0) AS like_count,
-        //            CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
-        //     FROM recipes r
-        //     LEFT JOIN users u ON r.created_by = u.user_id
-        //     LEFT JOIN (
-        //         SELECT recipe_id, COUNT(*) AS like_count
-        //         FROM likes
-        //         GROUP BY recipe_id
-        //     ) l ON r.recipe_id = l.recipe_id
-        //     LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
-        //     WHERE r.created_by = $1 AND (r.public = true OR r.created_by = $2)
-        //     ORDER BY r.created_at DESC
-        // `,
-        //         [userId, req.session.userId]
-        //     );
+            //     // const recipes = await db.any(
+            //     //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
+            //     //     [userId, req.session.userId]
+            //     // );
+            //     const recipes = await db.any(
+            //         `
+            //     SELECT r.*, 
+            //            u.username, 
+            //            u.profile_pic_url,
+            //            r.created_by, -- Include created_by for linking profiles
+            //            COALESCE(l.like_count, 0) AS like_count,
+            //            CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            //     FROM recipes r
+            //     LEFT JOIN users u ON r.created_by = u.user_id
+            //     LEFT JOIN (
+            //         SELECT recipe_id, COUNT(*) AS like_count
+            //         FROM likes
+            //         GROUP BY recipe_id
+            //     ) l ON r.recipe_id = l.recipe_id
+            //     LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            //     WHERE r.created_by = $1 AND (r.public = true OR r.created_by = $2)
+            //     ORDER BY r.created_at DESC
+            // `,
+            //         [userId, req.session.userId]
+            //     );
 
-        //     const isOwner = req.session.userId == userId;
+            //     const isOwner = req.session.userId == userId;
 
-        //     res.render('pages/profile', {
-        //         user,
-        //         recipes,
-        //         isOwner,
-        //         loggedIn: isLoggedIn(req),
-        //         theme: prefersDarkMode(req),
-        //         error: false,
-        //         message: 'Recipe deleted successfully.',
-        //     });
+            //     res.render('pages/profile', {
+            //         user,
+            //         recipes,
+            //         isOwner,
+            //         loggedIn: isLoggedIn(req),
+            //         theme: prefersDarkMode(req),
+            //         error: false,
+            //         message: 'Recipe deleted successfully.',
+            //     });
 
 
             res.redirect(`/profile/${req.session.userId}`);
@@ -896,6 +932,7 @@ app.post('/profile/delete', async (req, res) => {
             recipes,
             isOwner,
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             theme: prefersDarkMode(req),
             error: true,
             message: 'Problem deleting recipe',
@@ -919,8 +956,11 @@ app.get('/logout', (req, res) => {
 
         // Clear the theme cookie
         res.clearCookie('theme');
+        res.clearCookie('profile_picture_url');
         res.status(200).render("pages/login", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             error: false,
             message: 'Logged out successfully.',
             theme: 'light',
@@ -1037,6 +1077,9 @@ app.get('/my_recipes', async (req, res) => {
         console.log('Recipes List:', recipesList);
         console.log('Recipes List Rows:', recipesList.rows);
         res.render('pages/my_recipes', {
+            loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             recipes: recipesList,
             loggedIn: true,
             username: req.session.username
@@ -1124,6 +1167,7 @@ app.get('/list', async (req, res) => {
         // rendering
         res.render('pages/grocery_list', {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             ingredients,
             totalCost,
             theme: prefersDarkMode(req)
@@ -1132,6 +1176,7 @@ app.get('/list', async (req, res) => {
         console.error('[LIST] fatal error', err);
         res.status(500).render('pages/grocery_list', {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Error retrieving grocery list',
             theme: prefersDarkMode(req)
@@ -1180,6 +1225,8 @@ app.post('/list/addItem', async (req, res) => {
         console.error('POST /list/addItem error', err);
         res.status(500).render('pages/grocery_list', {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             error: true,
             message: 'Error adding to grocery list'
         });
@@ -1214,6 +1261,8 @@ app.post('/list/removeItem', async (req, res) => {
         console.error('POST /list/removeItem error', err);
         res.status(500).render('pages/grocery_list', {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             error: true,
             message: 'Error removing item'
         });
@@ -1235,6 +1284,7 @@ app.get('/settings', async (req, res) => {
 
         res.status(200).render("pages/settings", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             theme: prefersDarkMode(req)
         });
 
@@ -1243,6 +1293,8 @@ app.get('/settings', async (req, res) => {
         console.error(err);
         res.status(500).render("pages/settings", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             error: true,
             message: 'Error retrieving user settings. Please reload the page to try again...',
         });
@@ -1285,9 +1337,10 @@ app.post('/settings/update', async (req, res) => {
         console.error(err);
         res.status(500).render("pages/settings", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Error updating settings',
-            theme: prefersDarkMode(req)
+            theme: prefersDarkMode(req),
         });
     }
 
