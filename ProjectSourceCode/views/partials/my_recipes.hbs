@@ -1,73 +1,104 @@
 <h1>My Recipes</h1>
 
-<form id="sortForm">
-  <label for="sort_by">Sort by:</label>
-  <select name="sort_by" id="sort_by">
-    <option value="descPost">Newest First</option>
-    <option value="ascPost">Oldest First</option>
-    <option value="ascTime">Shortest Time</option>
-    <option value="descTime">Longest Time</option>
-    <option value="ascIngredients">Ingredients A-Z</option>
-    <option value="descIngredients">Ingredients Z-A</option>
-    <option value="ascLikes">Fewest Likes</option>
-    <option value="descLikes">Most Likes</option>
+<form id="sortForm" class="mb-4">
+  <label for="sort">Sort my recipes</label>
+  <select id="sort" class="form-select w-auto d-inline-block mx-2">
+    <option value="descTime">Newest First</option>
+    <option value="ascTime">Oldest First</option>
+    <option value="descDuration">Longest Duration</option>
+    <option value="ascDuration">Shortest Duration</option>
+    <option value="popularity">Most Liked</option>
   </select>
+  <button type="submit" class="btn btn-secondary">Sort</button>
 </form>
 
-<div id="recipeList">
+<div id="recipeResults">
   {{#each recipes}}
-    <div class="recipe-card">
-      <h2>{{this.title}}</h2>
-      {{#if this.image_url}}<img src="{{this.image_url}}" alt="{{this.title}}" style="max-width:200px;">{{/if}}
-      <p><strong>Description:</strong> {{this.description}}</p>
-      <p><strong>Ingredients:</strong> {{this.ingredients}}</p>
-      <p><strong>Duration:</strong> {{this.duration}}</p>
-      <p><strong>Likes:</strong> {{this.like_count}}</p>
-      <p><strong>Created At:</strong> {{this.created_at}}</p>
+    <div class="row p-2 justify-content-center">
+      <div class="card p-3 recipe-card" style="width: 50rem;">
+        <a href="/recipes/{{recipe_id}}">
+          <img src="{{image_url}}" class="card-img-top recipe-card-image" alt="{{title}}">
+        </a>
+        <div class="card-body">
+          <h4 class="card-title">{{title}}</h4>
+          <p class="card-text">{{description}}</p>
+          <hr/>
+          <p>{{getCommaDelimitedCount ingredients}} Ingredients</p>
+          <p>Likes: {{like_count}}</p>
+          <p>
+            {{#if duration.hours}}
+              {{#ifEquals duration.hours 1}}1 hour{{else}}{{duration.hours}} hours{{/ifEquals}}
+            {{/if}}
+            {{#if duration.minutes}}
+              {{#if duration.hours}}, {{/if}}{{duration.minutes}} minutes
+            {{/if}}
+          </p>
+          <a href="/recipes/{{recipe_id}}" class="btn btn-primary">View Recipe</a>
+        </div>
+      </div>
     </div>
   {{/each}}
 </div>
 
 <script>
-document.getElementById('sort_by').addEventListener('change', async function () {
-  const sortValue = this.value;
-  const recipeList = document.getElementById('recipeList');
-
-  try {
-    const res = await fetch('/my_recipes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ sort_by: sortValue })
-    });
-
-    if (!res.ok) throw new Error(`Error ${res.status}`);
-
-    const data = await res.json();
-    recipeList.innerHTML = '';
-
-    if (data.recipes.length === 0) {
-      recipeList.innerHTML = '<p>No recipes found.</p>';
-    } else {
-      data.recipes.forEach(recipe => {
-        const card = document.createElement('div');
-        card.className = 'recipe-card';
-        card.innerHTML = `
-          <h2>${recipe.title}</h2>
-          ${recipe.image_url ? `<img src="${recipe.image_url}" alt="${recipe.title}" style="max-width:200px;">` : ''}
-          <p><strong>Description:</strong> ${recipe.description || ''}</p>
-          <p><strong>Ingredients:</strong> ${recipe.ingredients || ''}</p>
-          <p><strong>Duration:</strong> ${recipe.duration || ''}</p>
-          <p><strong>Likes:</strong> ${recipe.like_count || 0}</p>
-          <p><strong>Created At:</strong> ${new Date(recipe.created_at).toLocaleString()}</p>
-        `;
-        recipeList.appendChild(card);
+  document.getElementById("sortForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const sort_by = document.getElementById("sort").value;
+    try {
+      const res = await fetch('/my_recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sort_by })
       });
+      if (!res.ok) throw new Error(res.statusText);
+
+      const { recipesList } = await res.json();
+      renderRecipes(recipesList);
+    } catch {
+      document.getElementById("recipeResults").innerHTML =
+        '<p style="color:red;">Error loading recipes.</p>';
     }
-  } catch (err) {
-    console.error('Error fetching sorted recipes:', err);
-    recipeList.innerHTML = '<p>Failed to load recipes. Please try again later.</p>';
+  });
+
+  function renderRecipes(recipes) {
+    if (!recipes.length) {
+      return document.getElementById("recipeResults")
+        .innerHTML = '<p>No recipes found.</p>';
+    }
+    document.getElementById("recipeResults").innerHTML =
+      recipes.map(r => `
+        <div class="row p-2 justify-content-center">
+          <div class="card p-3 recipe-card" style="width: 50rem;">
+            <a href="/recipes/${r.recipe_id}">
+              <img src="${r.image_url}"
+                   class="card-img-top recipe-card-image"
+                   alt="${r.title}">
+            </a>
+            <div class="card-body">
+              <h4 class="card-title">${r.title}</h4>
+              <p class="card-text">${r.description}</p>
+              <hr/>
+              <p>${r.ingredients.split(',').length} Ingredients</p>
+              <p>Likes: ${r.like_count}</p>
+              <p>${formatDuration(r.duration)}</p>
+              <a href="/recipes/${r.recipe_id}" class="btn btn-primary">
+                View Recipe
+              </a>
+            </div>
+          </div>
+        </div>
+      `).join('');
   }
-});
+
+  function formatDuration(interval) {
+    let h = 0, m = 0;
+    if (interval.hours != null)   h = +interval.hours;
+    if (interval.minutes != null) m = +interval.minutes;
+    if (interval.hours == null && typeof interval === 'number') {
+      h = Math.floor(interval/60); m = interval % 60;
+    }
+    return [ h && (h + (h===1?' hour':' hours')),
+             m && (m + ' minutes') ]
+           .filter(Boolean).join(', ');
+  }
 </script>

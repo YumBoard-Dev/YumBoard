@@ -142,6 +142,9 @@ Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
 });
 
+Handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
+    return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
+});
 
 
 // Add helper to convert a timestamp to local time
@@ -485,7 +488,6 @@ app.post('/register', async (req, res) => {
 
 
 app.get('/post_recipe', (req, res) => {
-    console.log(req.session.user_id)
     res.render("pages/post_recipe", {
         loggedIn: isLoggedIn(req),
     })
@@ -905,61 +907,60 @@ app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
 });
 
 app.get('/my_recipes', async (req, res) => {
-    if (!isLoggedIn(req)) {
-        return res.status(401).send("Unauthorized");
-    }
-    console.log('my_recipes')
-    try {
-        const recipesList = await db.query(
-            'SELECT * FROM recipes WHERE created_by = $1 ORDER BY created_at DESC',
-            [req.session.userId]
-        );
-        console.log('Recipes List:', recipesList);
-        console.log('Recipes List Rows:', recipesList.rows);
-        res.render('pages/my_recipes', {
-            recipes: recipesList,
-            loggedIn: true,
-            username: req.session.username
-        })
-    }
-    catch (err) {
-        console.error(err);
-        res.status(500).send("Something went wrong. Reload the website or try again later.")
-    }
-});
+    if (!isLoggedIn(req)) return res.status(401).send("Unauthorized");
+  
+    const sort_by = req.query.sort_by;
+    const userId  = req.session.userId;
+    let orderBy   = 'r.created_at DESC';
+  
+    if      (sort_by === 'ascTime')     orderBy = 'r.created_at ASC';
+    else if (sort_by === 'descTime')    orderBy = 'r.created_at DESC';
+    else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
+    else if (sort_by === 'descDuration')orderBy = 'r.duration DESC';
+    else if (sort_by === 'popularity')  orderBy = 'like_count DESC';
+  
+    const recipes = await db.query(
+      `SELECT r.*, COUNT(l.like_id) AS like_count
+         FROM recipes r
+         LEFT JOIN likes l ON r.recipe_id = l.recipe_id
+        WHERE r.created_by = $1
+        GROUP BY r.recipe_id
+        ORDER BY ${orderBy}`,
+      [userId]
+    );
+    console.log('Recipes List:', recipes);
+    res.render('pages/my_recipes', {
+      recipes,                 
+      loggedIn: true,
+      username: req.session.username
+    });
+  });
+  
 
-app.post('/my_recipes', async (req, res) => {
-    try {
-        const userId = req.session.userId;
-        const sortOption = req.body.sort_by;
-
-        let orderBy = 'r.created_at DESC'; // default
-
-        if (sortOption === 'ascPost') orderBy = 'r.created_at ASC';
-        else if (sortOption === 'descPost') orderBy = 'r.created_at DESC';
-        else if (sortOption === 'ascTime') orderBy = 'r.duration ASC';
-        else if (sortOption === 'descTime') orderBy = 'r.duration DESC';
-        else if (sortOption === 'ascIngredients') orderBy = 'r.ingredients ASC';
-        else if (sortOption === 'descIngredients') orderBy = 'r.ingredients DESC';
-        else if (sortOption === 'ascLikes') orderBy = 'like_count ASC';
-        else if (sortOption === 'descLikes') orderBy = 'like_count DESC';
-
-        const recipes = await db.query(
-            `SELECT r.*, COUNT(l.like_id) AS like_count
-       FROM recipes r
-       LEFT JOIN likes l ON r.recipe_id = l.recipe_id
-       WHERE r.created_by = $1
-       GROUP BY r.recipe_id
-       ORDER BY ${orderBy}`,
-            [userId]
-        );
-
-        res.json({ recipes: recipes.rows });
-    } catch (err) {
-        console.error('Error in POST /my_recipes:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
+  app.post('/my_recipes', async (req, res) => {
+    const sort_by = req.body.sort_by;
+    const userId  = req.session.userId;        
+    let orderBy   = 'r.created_at DESC';
+  
+    if      (sort_by === 'ascTime')     orderBy = 'r.created_at ASC';
+    else if (sort_by === 'descTime')    orderBy = 'r.created_at DESC';
+    else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
+    else if (sort_by === 'descDuration')orderBy = 'r.duration DESC';
+    else if (sort_by === 'popularity')  orderBy = 'like_count DESC';
+  
+    const recipesList = await db.query(
+      `SELECT r.*, COUNT(l.like_id) AS like_count
+         FROM recipes r
+         LEFT JOIN likes l ON r.recipe_id = l.recipe_id
+        WHERE r.created_by = $1
+        GROUP BY r.recipe_id
+        ORDER BY ${orderBy}`,
+      [userId]
+    );
+  
+    res.json({ recipesList });
+  });
+  
 
 
 // ─── Grocery List Route───────────────────────────
