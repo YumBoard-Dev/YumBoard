@@ -1068,7 +1068,8 @@ app.get('/my_recipes', async (req, res) => {
     console.log('Recipes List:', recipes);
     res.render('pages/my_recipes', {
       recipes,                 
-      loggedIn: true,
+      profile_picture: getProfilePicURL(req),
+      loggedIn: isLoggedIn(req),
       username: req.session.username
     });
   });
