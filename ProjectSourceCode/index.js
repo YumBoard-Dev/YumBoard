@@ -115,13 +115,14 @@ const storage = multer.diskStorage({
 
 // Update file filter to restrict file types
 const fileFilter = (req, file, cb) => {
-  
+
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
         cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'), false);
-}};
+    }
+};
 
 // Initialize upload middleware
 const upload = multer({
@@ -193,6 +194,11 @@ function prefersDarkMode(req) {
     return req.cookies.theme != null ? req.cookies.theme : 'light';
 }
 
+function getProfilePicURL(req) {
+    console.log(req.cookies);
+    return req.cookies.profile_picture_url != null ? req.cookies.profile_picture_url : "/static/images/placeholders/placeholder_profile.png";
+}
+
 
 
 // ------------------- Home  -------------------
@@ -227,6 +233,7 @@ app.get('/', async (req, res) => {
         // Render the home page with the recipes fetched from the database.
         res.render("pages/home", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             username: req.session ? req.session.username : null,
             recipes: recipes,
             theme: prefersDarkMode(req),
@@ -235,6 +242,8 @@ app.get('/', async (req, res) => {
         console.error(err);
         res.status(500).render("pages/home", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             username: req.session ? req.session.username : null,
             recipes: recipes,
             theme: req.cookies.theme != null ? req.cookies.theme : 'light',
@@ -282,6 +291,7 @@ app.get('/search', async (req, res) => {
         if (recipes.length === 0) {
             res.render("pages/home", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 username: req.session ? req.session.username : null,
                 recipes: recipes,
                 filter: req.query,
@@ -294,6 +304,8 @@ app.get('/search', async (req, res) => {
             // Render the home page with the recipes fetched from the database.
             res.render("pages/home", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
+                theme: prefersDarkMode(req),
                 username: req.session ? req.session.username : null,
                 recipes: recipes,
                 filter: req.query,
@@ -306,6 +318,8 @@ app.get('/search', async (req, res) => {
         console.error(err);
         res.status(500).render("pages/home", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             username: req.session ? req.session.username : null,
             recipes: recipes,
             filter: req.query,
@@ -323,7 +337,8 @@ app.get('/search', async (req, res) => {
 app.get('/login', (req, res) => {
     res.render("pages/login", {
         loggedIn: isLoggedIn(req),
-        theme: prefersDarkMode(req)
+        theme: prefersDarkMode(req),
+        profile_picture: getProfilePicURL(req),
     });
 });
 
@@ -343,6 +358,7 @@ app.post('/login', async (req, res) => {
         if (!user) {
             return res.status(400).render("pages/login", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 error: true,
                 message: 'Invalid username or password.',
                 theme: prefersDarkMode(req)
@@ -369,6 +385,7 @@ app.post('/login', async (req, res) => {
             }).then(() => {
                 console.log(user);
                 res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+                res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
                 console.log('User logged in successfully:', username);
                 return res.redirect('/');
             })
@@ -376,6 +393,7 @@ app.post('/login', async (req, res) => {
         } else {
             return res.status(400).render("pages/login", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 error: true,
                 message: 'Invalid username or password.',
                 theme: prefersDarkMode(req)
@@ -385,6 +403,7 @@ app.post('/login', async (req, res) => {
         console.error(error);
         return res.status(500).render("pages/login", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Error logging in: ' + error.message,
             theme: prefersDarkMode(req)
@@ -398,6 +417,7 @@ app.post('/login', async (req, res) => {
 app.get('/register', (req, res) => {
     res.render("pages/register", {
         loggedIn: isLoggedIn(req),
+        profile_picture: getProfilePicURL(req),
         theme: prefersDarkMode(req)
     });
 });
@@ -410,6 +430,7 @@ app.post('/register', async (req, res) => {
     if (!username || !password) {
         return res.status(400).render("pages/register", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Please enter a valid username and password.',
             theme: prefersDarkMode(req)
@@ -418,6 +439,7 @@ app.post('/register', async (req, res) => {
     if (!passwordRegex.test(password)) {
         return res.status(400).render("pages/register", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Password must be 8-15 characters long, include at least one lowercase letter, one uppercase letter, and one special character.',
             theme: prefersDarkMode(req)
@@ -461,6 +483,7 @@ app.post('/register', async (req, res) => {
             });
         }).then(() => {
             res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+            res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
             console.log('User registered successfully:', username);
             return res.status(200).redirect('/onboarding');
         });
@@ -470,6 +493,7 @@ app.post('/register', async (req, res) => {
         if (error.code === '23505') {
             return res.status(400).render("pages/register", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 error: true,
                 message: 'Username already exists',
                 theme: prefersDarkMode(req)
@@ -477,6 +501,7 @@ app.post('/register', async (req, res) => {
         } else {
             return res.status(500).render("pages/register", {
                 loggedIn: isLoggedIn(req),
+                profile_picture: getProfilePicURL(req),
                 error: true,
                 message: 'An error occurred: ' + error.message,
                 theme: prefersDarkMode(req)
@@ -487,128 +512,127 @@ app.post('/register', async (req, res) => {
 
 
 
-app.get('/post_recipe', (req, res) => {
-    res.render("pages/post_recipe", {
-        loggedIn: isLoggedIn(req),
-    })
-});
 
-app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
-    try {
-        const { recipeName, description, duration, instructions, ingredients, privacy } = req.body;
-
-        // Server-side validation
-        console.log('here');
-        if (
-            typeof recipeName !== 'string' || recipeName.trim() === '' ||
-            typeof instructions !== 'string' || instructions.trim() === '' ||
-            typeof ingredients !== 'string' || ingredients.trim() === '' ||
-            !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(duration) || // strict HH:MM format
-            (privacy !== 'true' && privacy !== 'false')
-        ) {
-            console.log('if');
-            return res.status(400).render('pages/post_recipe', {
-                error: "Please fill in all required fields with valid input.",
-            });
-        }
-        console.log('out of if')
-        const image_url = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_meal.png';
-
-        console.log('query1');
-
-        const userQuery = 'SELECT user_id from users WHERE username = $1';
-        const userId = await db.one(userQuery, [req.session.username]);
-
-        const query = `
-            INSERT INTO recipes(title, description, duration, instructions, ingredients, public, image_url, created_by, created_at)
-            VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-            RETURNING recipe_id;
-        `;
-        console.log(userId.user_id);
-        // Clean up ingredients: remove empty entries and trim spaces
-        const cleanedIngredients = ingredients
-            .split(',')
-            .map(s => s.trim())
-            .filter(s => s.length > 0)
-            .join(',');
-
-        const values = [
-            recipeName.trim(),
-            description?.trim() || '',
-            duration,
-            instructions.trim(),
-            cleanedIngredients,
-            privacy === 'true',
-            image_url,
-            userId.user_id
-        ];
-
-        const result = await db.one(query, values);
-
-        // Log the details before rendering the page
-        console.log("Recipe Name: " + recipeName + ", Description: " + description + ", Time: " + duration + ", Instructions: " + instructions + ", Logged In: " + isLoggedIn(req) + ", Message: Recipe posted successfully! Name: " + recipeName + ", Error: " + false);
-
-        return res.redirect(`/recipes/${result.recipe_id}`);
-    } catch (err) {
-        console.error("Error posting recipe:", err);
-        return res.status(500).render('pages/post_recipe', {
-            error: "An unexpected error occurred while posting your recipe.",
-        });
-    }
-});
 
 // ------------------- Profile Page -------------------
-app.get('/profile', async (req, res) => {
-    if (!req.session.userId) {
-        return res.redirect('/login');
-    }
+// app.get('/profile', async (req, res) => {
+//     if (!req.session.userId) {
+//         return res.redirect('/login');
+//     }
 
+//     try {
+//         const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+
+//         if (!user) {
+//             return res.status(404).send("User not found");
+//         }
+
+//         res.render("pages/profile", {
+//             loggedIn: isLoggedIn(req),
+//             user: {
+//                 username: user.username,
+//                 profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
+//             },
+//             username: user.username,
+//             theme: prefersDarkMode(req)
+//         });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).render("pages/login", {
+//             loggedIn: isLoggedIn(req),
+//             error: true,
+//             message: 'Error retrieving profile information',
+//             theme: prefersDarkMode(req)
+//         });
+//     }
+// });
+
+// Profile Page
+app.get('/profile/:userId', async (req, res) => {
     try {
-        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+        const userId = req.params.userId;
+        const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
 
-        if (!user) {
-            return res.status(404).send("User not found");
-        }
+        // const recipes = await db.any(
+        //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
+        //     [userId, req.session.userId]
+        // );
+        const recipes = await db.any(
+            `
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   r.created_by, -- Include created_by for linking profiles
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.created_by = $1 AND (r.public = true OR r.created_by = $2)
+            ORDER BY r.created_at DESC
+        `,
+            [userId, req.session.userId]
+        );
 
-        res.render("pages/profile", {
+        const isOwner = req.session.userId == userId;
+
+        res.render('pages/profile', {
+            user,
+            recipes,
+            isOwner,
             loggedIn: isLoggedIn(req),
-            user: {
-                username: user.username,
-                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
-            },
-            username: user.username,
-            theme: prefersDarkMode(req)
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
         });
     } catch (err) {
         console.error(err);
-        res.status(500).render("pages/login", {
+        res.status(500).render("pages/profile", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
-            message: 'Error retrieving profile information',
+            message: 'Error loading profile',
             theme: prefersDarkMode(req)
         });
     }
 });
 
+// Redirect `/profile` to `/profile/:userId` for the logged-in user
+app.get('/profile', (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+    res.redirect(`/profile/${req.session.userId}`);
+});
 
-// ------------------- Logout -------------------
+// Public User Profile
+app.get('/users/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
 
-app.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send('Error logging out.');
+        // If the user is viewing their own profile, redirect to `/profile/:userId`
+        if (req.session.userId == userId) {
+            return res.redirect(`/profile/${userId}`);
         }
 
-        // Clear the theme cookie
-        res.clearCookie('theme');
-        res.status(200).render("pages/login", {
+        const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
+        const recipes = await db.any('SELECT * FROM recipes WHERE created_by = $1 AND public = true', [userId]);
+
+        res.render('pages/profile', {
+            user,
+            recipes,
+            isOwner: false,
             loggedIn: isLoggedIn(req),
-            error: false,
-            message: 'Logged out successfully.',
-            theme: 'light',
+            theme: prefersDarkMode(req),
+            profile_picture: getProfilePicURL(req),
         });
-    });
+    } catch (err) {
+        console.error(err);
+        res.status(404).send('User not found.');
+    }
+
 });
 
 
@@ -664,19 +688,19 @@ app.get('/recipes/:recipe_id', async (req, res) => {
         // ─── INSERT ESTIMATED COST LOGIC HERE ───────────────────────────
         // 1) Turn comma‑delimited string into an array of trimmed terms
         const ingredients = recipe.ingredients
-          .split(',')
-          .map(i => i.trim())
-          .filter(Boolean);
+            .split(',')
+            .map(i => i.trim())
+            .filter(Boolean);
 
         // 2) Fetch each price in parallel (priceFor comes from services/kroger.js)
         const prices = await Promise.all(
-          ingredients.map(ing => priceFor(ing).catch(() => 0))
+            ingredients.map(ing => priceFor(ing).catch(() => 0))
         );
 
         // 3) Sum them and format as a two‑dec place string
         const estimatedCost = prices
-          .reduce((sum, p) => sum + p, 0)
-          .toFixed(2);
+            .reduce((sum, p) => sum + p, 0)
+            .toFixed(2);
         // ────────────────────────────────────────────────────────────────
 
         res.render('pages/recipe', {
@@ -685,10 +709,11 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             comments: rootComments,
             repliesMap,
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             username: req.session.username,
             theme: prefersDarkMode(req),
             estimatedCost,
-            
+
         });
 
     } catch (err) {
@@ -719,6 +744,8 @@ app.use(auth);
 app.get('/post_recipe', (req, res) => {
     res.render("pages/post_recipe", {
         loggedIn: isLoggedIn(req),
+        profile_picture: getProfilePicURL(req),
+        theme: prefersDarkMode(req),
     })
 });
 
@@ -781,36 +808,139 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
 });
 
 
-// ------------------- Profile Page -------------------
-app.get('/profile', async (req, res) => {
-    if (!req.session.userId) {
-        return res.redirect('/login');
-    }
 
+// Onboarding Page
+app.get('/onboarding', (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+    res.render('pages/onboarding', {
+        loggedIn: true,
+        profile_picture: getProfilePicURL(req),
+        theme: prefersDarkMode(req),
+    });
+});
+
+app.post('/onboarding', upload.single('profilePic'), async (req, res) => {
     try {
-        const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
+        const bio = req.body.bio || 'This user has not added a bio yet.';
+        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_profile.png';
 
-        if (!user) {
-            return res.status(404).send("User not found");
-        }
+        await db.none(
+            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
+            [bio, profilePicUrl, req.session.userId]
+        );
 
-        res.render("pages/profile", {
-            loggedIn: isLoggedIn(req),
-            user: {
-                username: user.username,
-                profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
-            },
-            username: user.username
-        });
+        // Redirect to the home page after onboarding
+        res.redirect('/');
     } catch (err) {
         console.error(err);
-        res.status(500).render("pages/login", {
-            loggedIn: isLoggedIn(req),
-            error: true,
-            message: 'Error retrieving profile information',
+        res.status(500).render('pages/onboarding', {
+            error: 'An error occurred during onboarding. Please try again.',
         });
     }
 });
+
+
+
+// Edit Profile
+app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
+    if (!isLoggedIn(req)) return res.redirect('/login');
+
+    try {
+        const bio = req.body.bio || 'This user has not added a bio yet.';
+        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : req.body.currentProfilePic;
+
+        await db.none(
+            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
+            [bio, profilePicUrl, req.session.userId]
+        );
+
+        res.redirect(`/profile/${req.session.userId}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).render('pages/profile', {
+            user,
+            recipes,
+            isOwner: true,
+            loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
+            error: true,
+            message: 'Error updating profile.',
+        });
+    }
+});
+
+
+app.post('/profile/delete', async (req, res) => {
+    try {
+
+        await db.none(
+            'DELETE FROM recipes WHERE recipe_id = $1 AND created_by = $2',
+            [req.body.recipe_id, req.session.userId]
+        ).then(async () => {
+
+            //     const userId = req.params.userId;
+            //     const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
+
+            //     // const recipes = await db.any(
+            //     //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
+            //     //     [userId, req.session.userId]
+            //     // );
+            //     const recipes = await db.any(
+            //         `
+            //     SELECT r.*, 
+            //            u.username, 
+            //            u.profile_pic_url,
+            //            r.created_by, -- Include created_by for linking profiles
+            //            COALESCE(l.like_count, 0) AS like_count,
+            //            CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            //     FROM recipes r
+            //     LEFT JOIN users u ON r.created_by = u.user_id
+            //     LEFT JOIN (
+            //         SELECT recipe_id, COUNT(*) AS like_count
+            //         FROM likes
+            //         GROUP BY recipe_id
+            //     ) l ON r.recipe_id = l.recipe_id
+            //     LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            //     WHERE r.created_by = $1 AND (r.public = true OR r.created_by = $2)
+            //     ORDER BY r.created_at DESC
+            // `,
+            //         [userId, req.session.userId]
+            //     );
+
+            //     const isOwner = req.session.userId == userId;
+
+            //     res.render('pages/profile', {
+            //         user,
+            //         recipes,
+            //         isOwner,
+            //         loggedIn: isLoggedIn(req),
+            //         theme: prefersDarkMode(req),
+            //         error: false,
+            //         message: 'Recipe deleted successfully.',
+            //     });
+
+
+            res.redirect(`/profile/${req.session.userId}`);
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).render('pages/profile', {
+            user,
+            recipes,
+            isOwner,
+            loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
+            error: true,
+            message: 'Problem deleting recipe',
+        });
+    }
+
+});
+
+
 
 
 
@@ -822,10 +952,17 @@ app.get('/logout', (req, res) => {
             console.error(err);
             return res.status(500).send('Error logging out.');
         }
+
+        // Clear the theme cookie
+        res.clearCookie('theme');
+        res.clearCookie('profile_picture_url');
         res.status(200).render("pages/login", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             error: false,
             message: 'Logged out successfully.',
+            theme: 'light',
         });
     });
 });
@@ -966,138 +1103,144 @@ app.get('/my_recipes', async (req, res) => {
 // ─── Grocery List Route───────────────────────────
 app.get('/list', async (req, res) => {
     try {
-      // list id
-      const { list_id } = await db.one(
-        'SELECT list_id FROM grocery_lists WHERE user_id = $1',
-        [req.session.userId]
-      );
-  
-      // read text
-      const items = await db.any(
-        'SELECT ingredient_text FROM list_ingredients WHERE list_id = $1',
-        [list_id]
-      );
-  
-      // get prices for each ingredient
-      const ingredients = await Promise.all(
-        items.map(async ({ ingredient_text }) => {
-          let rawPrice = 0;
-          try {
-            rawPrice = await priceFor(ingredient_text);
-          } catch (err) {
-            console.error(`[LIST] priceFor ERROR for "${ingredient_text}":`, err.message);
-          }
-  
-          const formatted = Number(rawPrice).toFixed(2);
-          console.log(`[LIST] "${ingredient_text}" → raw: ${rawPrice}  formatted: $${formatted}`);
-          return { ingredient_text, cost: formatted };
-        })
-      );
-  
-      // total price of ingred
-      const totalCost = ingredients
-        .reduce((sum, { cost }) => sum + parseFloat(cost), 0)
-        .toFixed(2);
-  
-      console.log('[LIST] final ingredients array:', ingredients);
-      console.log('[LIST] totalCost = $' + totalCost);
-  
-      // rendering
-      res.render('pages/grocery_list', {
-        loggedIn: isLoggedIn(req),
-        ingredients,
-        totalCost,
-        theme: prefersDarkMode(req)
-      });
+        // list id
+        const { list_id } = await db.one(
+            'SELECT list_id FROM grocery_lists WHERE user_id = $1',
+            [req.session.userId]
+        );
+
+        // read text
+        const items = await db.any(
+            'SELECT ingredient_text FROM list_ingredients WHERE list_id = $1',
+            [list_id]
+        );
+
+        // get prices for each ingredient
+        const ingredients = await Promise.all(
+            items.map(async ({ ingredient_text }) => {
+                let rawPrice = 0;
+                try {
+                    rawPrice = await priceFor(ingredient_text);
+                } catch (err) {
+                    console.error(`[LIST] priceFor ERROR for "${ingredient_text}":`, err.message);
+                }
+
+                const formatted = Number(rawPrice).toFixed(2);
+                console.log(`[LIST] "${ingredient_text}" → raw: ${rawPrice}  formatted: $${formatted}`);
+                return { ingredient_text, cost: formatted };
+            })
+        );
+
+        // total price of ingred
+        const totalCost = ingredients
+            .reduce((sum, { cost }) => sum + parseFloat(cost), 0)
+            .toFixed(2);
+
+        console.log('[LIST] final ingredients array:', ingredients);
+        console.log('[LIST] totalCost = $' + totalCost);
+
+        // rendering
+        res.render('pages/grocery_list', {
+            loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            ingredients,
+            totalCost,
+            theme: prefersDarkMode(req)
+        });
     } catch (err) {
-      console.error('[LIST] fatal error', err);
-      res.status(500).render('pages/grocery_list', {
-        loggedIn: isLoggedIn(req),
-        error: true,
-        message: 'Error retrieving grocery list',
-        theme: prefersDarkMode(req)
-      });
+        console.error('[LIST] fatal error', err);
+        res.status(500).render('pages/grocery_list', {
+            loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            error: true,
+            message: 'Error retrieving grocery list',
+            theme: prefersDarkMode(req)
+        });
     }
-  });
-  
-  
-  // ─── POST /list/addItem ───────────────────────────
-  app.post('/list/addItem', async (req, res) => {
+});
+
+
+// ─── POST /list/addItem ───────────────────────────
+app.post('/list/addItem', async (req, res) => {
     try {
 
-      // find list
-      const { list_id } = await db.one(
-        `SELECT list_id
+        // find list
+        const { list_id } = await db.one(
+            `SELECT list_id
            FROM grocery_lists
           WHERE user_id = $1`,
-        [req.session.userId]
-      );
-  
-      // split + dedupe
-      const newIngredients = Array.from(
-        new Set(
-          req.body.ingredient
-            .split(',')
-            .map(i => i.trim())
-            .filter(i => !!i)
-        )
-      );
-  
-      // for each new ingredient: look up its Kroger price, then insert or update
-      for (let ingredient of newIngredients) {
-        const price = await priceFor(ingredient).catch(() => 0);
-        await db.none(
-          `INSERT INTO list_ingredients (list_id, ingredient_text, cost)
+            [req.session.userId]
+        );
+
+        // split + dedupe
+        const newIngredients = Array.from(
+            new Set(
+                req.body.ingredient
+                    .split(',')
+                    .map(i => i.trim())
+                    .filter(i => !!i)
+            )
+        );
+
+        // for each new ingredient: look up its Kroger price, then insert or update
+        for (let ingredient of newIngredients) {
+            const price = await priceFor(ingredient).catch(() => 0);
+            await db.none(
+                `INSERT INTO list_ingredients (list_id, ingredient_text, cost)
              VALUES ($1, $2, $3)
           ON CONFLICT (list_id, ingredient_text)
             DO UPDATE SET cost = EXCLUDED.cost`,
-          [list_id, ingredient, price.toFixed(2)]
-        );
-      }
-  
-      res.redirect('/list');
-  
+                [list_id, ingredient, price.toFixed(2)]
+            );
+        }
+
+        res.redirect('/list');
+
     } catch (err) {
-      console.error('POST /list/addItem error', err);
-      res.status(500).render('pages/grocery_list', {
-        loggedIn: isLoggedIn(req),
-        error: true,
-        message: 'Error adding to grocery list'
-      });
+        console.error('POST /list/addItem error', err);
+        res.status(500).render('pages/grocery_list', {
+            loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
+            error: true,
+            message: 'Error adding to grocery list'
+        });
     }
-  });
-  
-  
-  // ─── POST /list/removeItem ────────────────────────
-  app.post('/list/removeItem', async (req, res) => {
+});
+
+
+// ─── POST /list/removeItem ────────────────────────
+app.post('/list/removeItem', async (req, res) => {
     try {
-      // find their list
-      const { list_id } = await db.one(
-        `SELECT list_id
+        // find their list
+        const { list_id } = await db.one(
+            `SELECT list_id
            FROM grocery_lists
           WHERE user_id = $1`,
-        [req.session.userId]
-      );
-  
-      // delete the single ingredient
-      await db.none(
-        `DELETE
+            [req.session.userId]
+        );
+
+        // delete the single ingredient
+        await db.none(
+            `DELETE
            FROM list_ingredients
           WHERE list_id = $1
             AND ingredient_text = $2`,
-        [list_id, req.body.ingredient_text]
-      );
-  
-      res.redirect('/list');
-  
+            [list_id, req.body.ingredient_text]
+        );
+
+        res.redirect('/list');
+
 
     } catch (err) {
-      console.error('POST /list/removeItem error', err);
-      res.status(500).render('pages/grocery_list', {
-        loggedIn: isLoggedIn(req),
-        error: true,
-        message: 'Error removing item'
-      });
+        console.error('POST /list/removeItem error', err);
+        res.status(500).render('pages/grocery_list', {
+            loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
+            error: true,
+            message: 'Error removing item'
+        });
     }
 });
 
@@ -1116,6 +1259,7 @@ app.get('/settings', async (req, res) => {
 
         res.status(200).render("pages/settings", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             theme: prefersDarkMode(req)
         });
 
@@ -1124,6 +1268,8 @@ app.get('/settings', async (req, res) => {
         console.error(err);
         res.status(500).render("pages/settings", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
+            theme: prefersDarkMode(req),
             error: true,
             message: 'Error retrieving user settings. Please reload the page to try again...',
         });
@@ -1166,116 +1312,15 @@ app.post('/settings/update', async (req, res) => {
         console.error(err);
         res.status(500).render("pages/settings", {
             loggedIn: isLoggedIn(req),
+            profile_picture: getProfilePicURL(req),
             error: true,
             message: 'Error updating settings',
-            theme: prefersDarkMode(req)
+            theme: prefersDarkMode(req),
         });
     }
 
 });
 
-// Onboarding Page
-app.get('/onboarding', (req, res) => {
-    if (!isLoggedIn(req)) return res.redirect('/login');
-    res.render('pages/onboarding', { loggedIn: true });
-});
-
-app.post('/onboarding', upload.single('profilePic'), async (req, res) => {
-    try {
-        const bio = req.body.bio || 'This user has not added a bio yet.';
-        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : '/static/images/placeholders/placeholder_profile.png';
-
-        await db.none(
-            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
-            [bio, profilePicUrl, req.session.userId]
-        );
-
-        // Redirect to the home page after onboarding
-        res.redirect('/');
-    } catch (err) {
-        console.error(err);
-        res.status(500).render('pages/onboarding', {
-            error: 'An error occurred during onboarding. Please try again.',
-        });
-    }
-});
-
-// Profile Page
-app.get('/profile/:userId', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
-
-        const recipes = await db.any(
-            'SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)',
-            [userId, req.session.userId]
-        );
-
-        const isOwner = req.session.userId == userId;
-
-        res.render('pages/profile', {
-            user,
-            recipes,
-            isOwner,
-            loggedIn: isLoggedIn(req),
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error loading profile.');
-    }
-});
-
-// Redirect `/profile` to `/profile/:userId` for the logged-in user
-app.get('/profile', (req, res) => {
-    if (!isLoggedIn(req)) return res.redirect('/login');
-    res.redirect(`/profile/${req.session.userId}`);
-});
-
-// Public User Profile
-app.get('/users/:userId', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-
-        // If the user is viewing their own profile, redirect to `/profile/:userId`
-        if (req.session.userId == userId) {
-            return res.redirect(`/profile/${userId}`);
-        }
-
-        const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
-        const recipes = await db.any('SELECT * FROM recipes WHERE created_by = $1 AND public = true', [userId]);
-
-        res.render('pages/profile', {
-            user,
-            recipes,
-            isOwner: false,
-            loggedIn: isLoggedIn(req),
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(404).send('User not found.');
-    }
-
-});
-
-// Edit Profile
-app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
-    if (!isLoggedIn(req)) return res.redirect('/login');
-
-    try {
-        const bio = req.body.bio || 'This user has not added a bio yet.';
-        const profilePicUrl = req.file ? `/uploads/${req.file.filename}` : req.body.currentProfilePic;
-
-        await db.none(
-            'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
-            [bio, profilePicUrl, req.session.userId]
-        );
-
-        res.redirect(`/profile/${req.session.userId}`);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error updating profile.');
-    }
-});
 
 // starting the server and keeping the connection open to listen for more requests
 module.exports = app.listen(3000);
