@@ -195,7 +195,6 @@ function prefersDarkMode(req) {
 }
 
 function getProfilePicURL(req) {
-    console.log(req.cookies);
     return req.cookies.profile_picture_url != null ? req.cookies.profile_picture_url : "/static/images/placeholders/placeholder_profile.png";
 }
 
@@ -383,9 +382,9 @@ app.post('/login', async (req, res) => {
                     }
                 });
             }).then(() => {
-                console.log(user);
-                res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
-                res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
+                // console.log(user);
+                // res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+                // res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
                 console.log('User logged in successfully:', username);
                 return res.redirect('/');
             })
@@ -482,8 +481,8 @@ app.post('/register', async (req, res) => {
                 }
             });
         }).then(() => {
-            res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
-            res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
+            // res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+            // res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
             console.log('User registered successfully:', username);
             return res.status(200).redirect('/onboarding');
         });
@@ -1133,11 +1132,12 @@ app.get('/liked', async (req, res) => {
             ORDER BY ${orderBy}`,
         [userId]
     );
-    console.log('Recipes List:', recipes);
+    // console.log('Recipes List:', recipes);
     res.render('pages/liked', {
         recipes,
         profile_picture: getProfilePicURL(req),
         loggedIn: isLoggedIn(req),
+        theme: prefersDarkMode(req),
         username: req.session.username
     });
 });
@@ -1206,7 +1206,7 @@ app.get('/list', async (req, res) => {
                 }
 
                 const formatted = Number(rawPrice).toFixed(2);
-                console.log(`[LIST] "${ingredient_text}" → raw: ${rawPrice}  formatted: $${formatted}`);
+                // console.log(`[LIST] "${ingredient_text}" → raw: ${rawPrice}  formatted: $${formatted}`);
                 return { ingredient_text, cost: formatted };
             })
         );
@@ -1216,8 +1216,8 @@ app.get('/list', async (req, res) => {
             .reduce((sum, { cost }) => sum + parseFloat(cost), 0)
             .toFixed(2);
 
-        console.log('[LIST] final ingredients array:', ingredients);
-        console.log('[LIST] totalCost = $' + totalCost);
+        // console.log('[LIST] final ingredients array:', ingredients);
+        // console.log('[LIST] totalCost = $' + totalCost);
 
         // rendering
         res.render('pages/grocery_list', {
