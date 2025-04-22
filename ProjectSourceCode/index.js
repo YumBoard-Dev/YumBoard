@@ -618,7 +618,27 @@ app.get('/users/:userId', async (req, res) => {
         }
 
         const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
-        const recipes = await db.any('SELECT * FROM recipes WHERE created_by = $1 AND public = true', [userId]);
+        const recipes = await db.any(
+            `
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   r.created_by, -- Include created_by for linking profiles
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.created_by = $1 AND (r.public = true)
+            ORDER BY r.created_at DESC
+        `,
+            [userId]
+        );
 
         res.render('pages/profile', {
             user,
@@ -720,6 +740,45 @@ app.get('/recipes/:recipe_id', async (req, res) => {
         console.error(err);
         res.status(500).send("Error retrieving recipe");
     }
+});
+
+
+app.post('/my_recipes', async (req, res) => {
+    const sort_by = req.body.sort_by;
+    const userId = req.body.userId;
+
+    console.log('User ID:', userId);
+    console.log('Sort By:', sort_by);
+
+    let orderBy = 'r.created_at DESC';
+
+    if (sort_by === 'ascTime') orderBy = 'r.created_at ASC';
+    else if (sort_by === 'descTime') orderBy = 'r.created_at DESC';
+    else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
+    else if (sort_by === 'descDuration') orderBy = 'r.duration DESC';
+    else if (sort_by === 'popularity') orderBy = 'like_count DESC';
+
+    const recipesList = await db.query(
+        `SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+        WHERE r.created_by = $1
+        GROUP BY r.recipe_id, u.username, u.profile_pic_url, ul.user_id, l.like_count
+        ORDER BY ${orderBy}`,
+        [userId]
+    );
+
+    res.json({ recipesList });
 });
 
 
@@ -1043,62 +1102,82 @@ app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
     }
 });
 
-app.get('/my_recipes', async (req, res) => {
+app.get('/liked', async (req, res) => {
     if (!isLoggedIn(req)) return res.status(401).send("Unauthorized");
-  
+
     const sort_by = req.query.sort_by;
-    const userId  = req.session.userId;
-    let orderBy   = 'r.created_at DESC';
-  
-    if      (sort_by === 'ascTime')     orderBy = 'r.created_at ASC';
-    else if (sort_by === 'descTime')    orderBy = 'r.created_at DESC';
+    const userId = req.session.userId;
+    let orderBy = 'r.created_at DESC';
+
+    if (sort_by === 'ascTime') orderBy = 'r.created_at ASC';
+    else if (sort_by === 'descTime') orderBy = 'r.created_at DESC';
     else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
-    else if (sort_by === 'descDuration')orderBy = 'r.duration DESC';
-    else if (sort_by === 'popularity')  orderBy = 'like_count DESC';
-  
+    else if (sort_by === 'descDuration') orderBy = 'r.duration DESC';
+    else if (sort_by === 'popularity') orderBy = 'like_count DESC';
+
     const recipes = await db.query(
-      `SELECT r.*, COUNT(l.like_id) AS like_count
-         FROM recipes r
-         LEFT JOIN likes l ON r.recipe_id = l.recipe_id
-        WHERE r.created_by = $1
-        GROUP BY r.recipe_id
-        ORDER BY ${orderBy}`,
-      [userId]
+        `SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   TRUE AS liked_by_user
+            FROM recipes r
+            INNER JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            GROUP BY r.recipe_id, u.username, u.profile_pic_url, l.like_count
+            ORDER BY ${orderBy}`,
+        [userId]
     );
     console.log('Recipes List:', recipes);
-    res.render('pages/my_recipes', {
-      recipes,                 
-      profile_picture: getProfilePicURL(req),
-      loggedIn: isLoggedIn(req),
-      username: req.session.username
+    res.render('pages/liked', {
+        recipes,
+        profile_picture: getProfilePicURL(req),
+        loggedIn: isLoggedIn(req),
+        username: req.session.username
     });
-  });
-  
+});
 
-  app.post('/my_recipes', async (req, res) => {
+
+app.post('/liked', async (req, res) => {
     const sort_by = req.body.sort_by;
-    const userId  = req.session.userId;        
-    let orderBy   = 'r.created_at DESC';
-  
-    if      (sort_by === 'ascTime')     orderBy = 'r.created_at ASC';
-    else if (sort_by === 'descTime')    orderBy = 'r.created_at DESC';
+    const userId = req.session.userId;
+    let orderBy = 'r.created_at DESC';
+
+    if (sort_by === 'ascTime') orderBy = 'r.created_at ASC';
+    else if (sort_by === 'descTime') orderBy = 'r.created_at DESC';
     else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
-    else if (sort_by === 'descDuration')orderBy = 'r.duration DESC';
-    else if (sort_by === 'popularity')  orderBy = 'like_count DESC';
-  
+    else if (sort_by === 'descDuration') orderBy = 'r.duration DESC';
+    else if (sort_by === 'popularity') orderBy = 'like_count DESC';
+
     const recipesList = await db.query(
-      `SELECT r.*, COUNT(l.like_id) AS like_count
-         FROM recipes r
-         LEFT JOIN likes l ON r.recipe_id = l.recipe_id
-        WHERE r.created_by = $1
-        GROUP BY r.recipe_id
-        ORDER BY ${orderBy}`,
-      [userId]
+        `SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   TRUE AS liked_by_user
+            FROM recipes r
+            INNER JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            GROUP BY r.recipe_id, u.username, u.profile_pic_url, l.like_count
+            ORDER BY ${orderBy}`,
+        [userId]
     );
-  
+
     res.json({ recipesList });
-  });
-  
+});
+
+
+
 
 
 // ─── Grocery List Route───────────────────────────

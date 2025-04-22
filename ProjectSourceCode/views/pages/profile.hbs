@@ -2,7 +2,7 @@
   <link rel="stylesheet" href="/static/css/profile.css">
 </head>
 
-<div class="profile-container">
+<div class="profile-container container-sm display-flex justify-content-center" style="margin-top: 20px; max-width: 50rem;">
 
   {{> alert}}
   <h2>{{user.username}}'s Profile</h2>
@@ -30,7 +30,5 @@
   </div>
 
   <hr />
-
-  <h3>Posts</h3>
   {{> my_recipes}}
 </div>
