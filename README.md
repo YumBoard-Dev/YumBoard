@@ -6,8 +6,10 @@
 - [Technology Stack](#technology-stack)
 - [Prerequisites](#prerequisites)
 - [How to run](#how-to-run)
-- [How to test](#how-to-test)
+- [How to test](#how-to-run-tests)
 - [Deployed Application](#deployed-application)
+- [Environment Variables](#environment-variables)
+- [How to edit scss files](#how-to-edit-scss-files)
 
 ## Application Description:
 
