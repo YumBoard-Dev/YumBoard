@@ -4,23 +4,23 @@
             <div class="row p-2 justify-content-center text-center w-100">
                 <h1>Post Recipe</h1>
             </div>
-            <div class="row p-2 justify-content-center mb-5">
+            <div class="row p-2 justify-content-center mb-3">
                 {{> alert}}
             </div>
-            <div class="row p-2 justify-content-center mb-5">
+            <div class="row p-2 justify-content-center mb-3">
                 <h4>Recipe Name</h4>
                 <input class="form-control  mt-2" style="width: 300px;" type="text" name="recipeName"
                     placeholder="Recipe Name" required>
             </div>
             <hr>
-            <div class="row p-2 justify-content-center mb-5">
+            <div class="row p-2 justify-content-center mb-3">
                 <h4>Description</h4>
                 <textarea class="form-control mt-2" style="width: 300px;" name="description"
                     placeholder="Give us a description of your recipe"></textarea>
             </div>
             <hr>
-            <div class="row p-2 justify-content-center mb-5">
-                <h4>How long does it take to make your recipe</h4>
+            <div class="row p-2 justify-content-center mb-3">
+                <h4>How long does it take to make your recipe?</h4>
                 <input type="text" id="duration" name="duration" placeholder="HH:MM e.g. 01:15"
                     style="width:max-content" class="mt-2 form-control" required>
                 <small>eg: 01:15 for 1 hour and 15 minutes</small>
@@ -30,16 +30,16 @@
             <div class="row p-2 justify-content-center mb-3">
                 <h4>Instructions</h4>
                 <textarea class="form-control  mt-2" style="width: 300px;" name="instructions"
-                    placeholder="How do we make your recipe" required></textarea>
+                    placeholder="How do we make your recipe?" required></textarea>
             </div>
             <hr>
-            <div class="row p-2 justify-content-center">
+            <div class="row p-2 justify-content-center mb-3">
                 <h4>Ingredients</h4>
                 <textarea class="form-control  mt-2" style="width: 300px;" name="ingredients"
                     placeholder="What do we need to make your recipe? (comma-separated list)" required></textarea>
             </div>
             <hr>
-            <div class="row p-2 justify-content-center">
+            <div class="row p-2 justify-content-center mb-3">
                 <h4>Privacy</h4>
                 <select id="privacy" name="privacy" required style="width: 300px;">
                     <option value="false">Private</option>

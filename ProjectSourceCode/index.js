@@ -143,7 +143,6 @@ Handlebars.registerHelper('lookup', function (obj, field) {
     return obj && obj[field];
 });
 
-
 Handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
     return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
 });
@@ -163,29 +162,6 @@ Handlebars.registerHelper('isDarkMode', function (str, options) {
 // <!-- Section 4 : API Routes -->
 // *****************************************************
 
-// const exampleRecipes = [{
-//     "recipe_id": 1234,
-//     "title": "Spaghetti Bolognese",
-//     "description": "A classic Italian pasta dish with a rich meat sauce.",
-//     // Instructions are in a string separated by "|"                             
-//     "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
-//     "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
-//     "created_by": "123457",
-//     "created_at": "2023-10-01T12:00:00Z",
-//     "public": true,
-//     "image_url": "/static/images/placeholders/placeholder_meal.png"
-// }, {
-//     "recipe_id": 1235,
-//     "title": "Vegan Buddha Bowl",
-//     "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
-//     // Instructions are in a string separated by "|"                             
-//     "instructions": "Cook quinoa according to package instructions. | Roast your choice of vegetables (e.g., sweet potatoes, broccoli, bell peppers) in the oven. | Prepare a tahini dressing by mixing tahini, lemon juice, garlic, and water. | Assemble the bowl with quinoa, roasted vegetables, and drizzle with tahini dressing.",
-//     "ingredients": "quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic",
-//     "created_by": "123456",
-//     "created_at": "2023-10-02T12:00:00Z",
-//     "public": true,
-//     "image_url": "/static/images/placeholders/placeholder_meal.png"
-// }];
 
 function isLoggedIn(req) {
     return req.session && req.session.userId;
@@ -196,7 +172,6 @@ function prefersDarkMode(req) {
 }
 
 function getProfilePicURL(req) {
-    console.log(req.cookies);
     return req.cookies.profile_picture_url != null ? req.cookies.profile_picture_url : "/static/images/placeholders/placeholder_profile.png";
 }
 
@@ -384,7 +359,7 @@ app.post('/login', async (req, res) => {
                     }
                 });
             }).then(() => {
-                console.log(user);
+                // console.log(user);
                 res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
                 res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
                 console.log('User logged in successfully:', username);
@@ -513,41 +488,6 @@ app.post('/register', async (req, res) => {
 
 
 
-
-
-// ------------------- Profile Page -------------------
-// app.get('/profile', async (req, res) => {
-//     if (!req.session.userId) {
-//         return res.redirect('/login');
-//     }
-
-//     try {
-//         const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
-
-//         if (!user) {
-//             return res.status(404).send("User not found");
-//         }
-
-//         res.render("pages/profile", {
-//             loggedIn: isLoggedIn(req),
-//             user: {
-//                 username: user.username,
-//                 profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
-//             },
-//             username: user.username,
-//             theme: prefersDarkMode(req)
-//         });
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).render("pages/login", {
-//             loggedIn: isLoggedIn(req),
-//             error: true,
-//             message: 'Error retrieving profile information',
-//             theme: prefersDarkMode(req)
-//         });
-//     }
-// });
-
 // Profile Page
 app.get('/profile/:userId', async (req, res) => {
     try {
@@ -619,7 +559,27 @@ app.get('/users/:userId', async (req, res) => {
         }
 
         const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
-        const recipes = await db.any('SELECT * FROM recipes WHERE created_by = $1 AND public = true', [userId]);
+        const recipes = await db.any(
+            `
+            SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   r.created_by, -- Include created_by for linking profiles
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            WHERE r.created_by = $1 AND (r.public = true)
+            ORDER BY r.created_at DESC
+        `,
+            [userId]
+        );
 
         res.render('pages/profile', {
             user,
@@ -721,6 +681,45 @@ app.get('/recipes/:recipe_id', async (req, res) => {
         console.error(err);
         res.status(500).send("Error retrieving recipe");
     }
+});
+
+
+app.post('/my_recipes', async (req, res) => {
+    const sort_by = req.body.sort_by;
+    const userId = req.body.userId;
+
+    console.log('User ID:', userId);
+    console.log('Sort By:', sort_by);
+
+    let orderBy = 'r.created_at DESC';
+
+    if (sort_by === 'ascTime') orderBy = 'r.created_at ASC';
+    else if (sort_by === 'descTime') orderBy = 'r.created_at DESC';
+    else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
+    else if (sort_by === 'descDuration') orderBy = 'r.duration DESC';
+    else if (sort_by === 'popularity') orderBy = 'like_count DESC';
+
+    const recipesList = await db.query(
+        `SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+        WHERE r.created_by = $1
+        GROUP BY r.recipe_id, u.username, u.profile_pic_url, ul.user_id, l.like_count
+        ORDER BY ${orderBy}`,
+        [userId]
+    );
+
+    res.json({ recipesList });
 });
 
 
@@ -853,21 +852,15 @@ app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
         await db.none(
             'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
             [bio, profilePicUrl, req.session.userId]
-        );
+        ).then(() => {
 
-        res.redirect(`/profile/${req.session.userId}`);
+            res.cookie('profile_picture_url', profilePicUrl); // Set the profile picture cookie
+            res.redirect(`/profile/${req.session.userId}`);
+        });
+
     } catch (err) {
         console.error(err);
-        res.status(500).render('pages/profile', {
-            user,
-            recipes,
-            isOwner: true,
-            loggedIn: isLoggedIn(req),
-            profile_picture: getProfilePicURL(req),
-            theme: prefersDarkMode(req),
-            error: true,
-            message: 'Error updating profile.',
-        });
+        res.status(500).send('Error updating profile');
     }
 });
 
@@ -1044,85 +1037,83 @@ app.post('/recipes/:recipe_id/comments/:comment_id/reply', async (req, res) => {
     }
 });
 
-app.get('/my_recipes', async (req, res) => {
-    if (!isLoggedIn(req)) {
-        return res.status(401).send("Unauthorized");
-    }
-    // console.log('my_recipes')
-    try {
+app.get('/liked', async (req, res) => {
+    if (!isLoggedIn(req)) return res.status(401).send("Unauthorized");
 
-        var filter = req.query.filter || "";
+    const sort_by = req.query.sort_by;
+    const userId = req.session.userId;
+    let orderBy = 'r.created_at DESC';
 
+    if (sort_by === 'ascTime') orderBy = 'r.created_at ASC';
+    else if (sort_by === 'descTime') orderBy = 'r.created_at DESC';
+    else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
+    else if (sort_by === 'descDuration') orderBy = 'r.duration DESC';
+    else if (sort_by === 'popularity') orderBy = 'like_count DESC';
 
-        const recipesList = await db.query(
-            `
-            SELECT r.*, 
+    const recipes = await db.query(
+        `SELECT r.*, 
                    u.username, 
                    u.profile_pic_url,
                    COALESCE(l.like_count, 0) AS like_count,
-                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+                   TRUE AS liked_by_user
             FROM recipes r
+            INNER JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
             LEFT JOIN users u ON r.created_by = u.user_id
             LEFT JOIN (
                 SELECT recipe_id, COUNT(*) AS like_count
                 FROM likes
                 GROUP BY recipe_id
             ) l ON r.recipe_id = l.recipe_id
-            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
-            WHERE r.recipe_id = $1
-            ORDER BY r.created_at DESC
-        `,
-            [req.session.userId]
-        );
-        console.log('Recipes List:', recipesList);
-        console.log('Recipes List Rows:', recipesList.rows);
-        res.render('pages/my_recipes', {
-            loggedIn: isLoggedIn(req),
-            profile_picture: getProfilePicURL(req),
-            theme: prefersDarkMode(req),
-            recipes: recipesList,
-            loggedIn: true,
-            username: req.session.username
-        })
-    }
-    catch (err) {
-        console.error(err);
-        res.status(500).send("Something went wrong. Reload the website or try again later.")
-    }
+            GROUP BY r.recipe_id, u.username, u.profile_pic_url, l.like_count
+            ORDER BY ${orderBy}`,
+        [userId]
+    );
+    // console.log('Recipes List:', recipes);
+    res.render('pages/liked', {
+        recipes,
+        profile_picture: getProfilePicURL(req),
+        loggedIn: isLoggedIn(req),
+        theme: prefersDarkMode(req),
+        username: req.session.username
+    });
 });
 
-app.post('/my_recipes', async (req, res) => {
-    try {
-        const userId = req.session.userId;
-        const sortOption = req.body.sort_by;
 
-        let orderBy = 'r.created_at DESC'; // default
+app.post('/liked', async (req, res) => {
+    const sort_by = req.body.sort_by;
+    const userId = req.session.userId;
+    let orderBy = 'r.created_at DESC';
 
-        if (sortOption === 'ascPost') orderBy = 'r.created_at ASC';
-        else if (sortOption === 'descPost') orderBy = 'r.created_at DESC';
-        else if (sortOption === 'ascTime') orderBy = 'r.duration ASC';
-        else if (sortOption === 'descTime') orderBy = 'r.duration DESC';
-        else if (sortOption === 'ascIngredients') orderBy = 'r.ingredients ASC';
-        else if (sortOption === 'descIngredients') orderBy = 'r.ingredients DESC';
-        else if (sortOption === 'ascLikes') orderBy = 'like_count ASC';
-        else if (sortOption === 'descLikes') orderBy = 'like_count DESC';
+    if (sort_by === 'ascTime') orderBy = 'r.created_at ASC';
+    else if (sort_by === 'descTime') orderBy = 'r.created_at DESC';
+    else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
+    else if (sort_by === 'descDuration') orderBy = 'r.duration DESC';
+    else if (sort_by === 'popularity') orderBy = 'like_count DESC';
 
-        const recipes = await db.query(
-            `SELECT r.*, COUNT(l.like_id) AS like_count
-       FROM recipes r
-       LEFT JOIN likes l ON r.recipe_id = l.recipe_id
-       WHERE r.created_by = $1
-       GROUP BY r.recipe_id
-       ORDER BY ${orderBy}`,
-            [userId]
-        );
+    const recipesList = await db.query(
+        `SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   TRUE AS liked_by_user
+            FROM recipes r
+            INNER JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            GROUP BY r.recipe_id, u.username, u.profile_pic_url, l.like_count
+            ORDER BY ${orderBy}`,
+        [userId]
+    );
 
-        res.json({ recipes: recipes.rows });
-    } catch (err) {
-        console.error('Error in POST /my_recipes:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
+    res.json({ recipesList });
 });
+
+
+
 
 
 // ─── Grocery List Route───────────────────────────
@@ -1151,7 +1142,7 @@ app.get('/list', async (req, res) => {
                 }
 
                 const formatted = Number(rawPrice).toFixed(2);
-                console.log(`[LIST] "${ingredient_text}" → raw: ${rawPrice}  formatted: $${formatted}`);
+                // console.log(`[LIST] "${ingredient_text}" → raw: ${rawPrice}  formatted: $${formatted}`);
                 return { ingredient_text, cost: formatted };
             })
         );
@@ -1161,8 +1152,8 @@ app.get('/list', async (req, res) => {
             .reduce((sum, { cost }) => sum + parseFloat(cost), 0)
             .toFixed(2);
 
-        console.log('[LIST] final ingredients array:', ingredients);
-        console.log('[LIST] totalCost = $' + totalCost);
+        // console.log('[LIST] final ingredients array:', ingredients);
+        // console.log('[LIST] totalCost = $' + totalCost);
 
         // rendering
         res.render('pages/grocery_list', {

@@ -11,7 +11,7 @@ async function getProductToken() {
     return productToken;
   }
 
-  console.log('[KROGER] fetching OAuth token (product.compact)');
+  // console.log('[KROGER] fetching OAuth token (product.compact)');
   const creds = Buffer.from(
     `${process.env.KROGER_CLIENT_ID}:${process.env.KROGER_CLIENT_SECRET}`
   ).toString('base64');
@@ -34,7 +34,7 @@ async function getProductToken() {
 
 // 2) priceFor(term) searches for product id then finds details then gets price
 async function priceFor(term) {
-  console.log(`[KROGER] priceFor("${term}")`);
+  // console.log(`[KROGER] priceFor("${term}")`);
   const token = await getProductToken();
   const locationId = process.env.KROGER_LOCATION_ID;
   if (!locationId) {
@@ -61,7 +61,7 @@ async function priceFor(term) {
     console.warn('[KROGER] no product match for', term);
     return 0;
   }
-  console.log('[KROGER] Found productId for', term, ':', prod.productId);
+  // console.log('[KROGER] Found productId for', term, ':', prod.productId);
 
   // get details
   const details = await axios.get(
@@ -87,7 +87,7 @@ async function priceFor(term) {
   const p = typeof priceObj.regular === 'number'
           ? priceObj.regular
           : priceObj.current;
-  console.log(`[KROGER] priceFor("${term}") →`, p);
+  // console.log(`[KROGER] priceFor("${term}") →`, p);
   return typeof p === 'number' ? p : 0;
 }
 
