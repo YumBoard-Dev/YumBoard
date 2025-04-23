@@ -162,29 +162,6 @@ Handlebars.registerHelper('isDarkMode', function (str, options) {
 // <!-- Section 4 : API Routes -->
 // *****************************************************
 
-// const exampleRecipes = [{
-//     "recipe_id": 1234,
-//     "title": "Spaghetti Bolognese",
-//     "description": "A classic Italian pasta dish with a rich meat sauce.",
-//     // Instructions are in a string separated by "|"                             
-//     "instructions": "Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.",
-//     "ingredients": "spaghetti, ground beef, onions, garlic, tomato sauce",
-//     "created_by": "123457",
-//     "created_at": "2023-10-01T12:00:00Z",
-//     "public": true,
-//     "image_url": "/static/images/placeholders/placeholder_meal.png"
-// }, {
-//     "recipe_id": 1235,
-//     "title": "Vegan Buddha Bowl",
-//     "description": "A nourishing bowl filled with quinoa, roasted vegetables, and a creamy tahini dressing.",
-//     // Instructions are in a string separated by "|"                             
-//     "instructions": "Cook quinoa according to package instructions. | Roast your choice of vegetables (e.g., sweet potatoes, broccoli, bell peppers) in the oven. | Prepare a tahini dressing by mixing tahini, lemon juice, garlic, and water. | Assemble the bowl with quinoa, roasted vegetables, and drizzle with tahini dressing.",
-//     "ingredients": "quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic",
-//     "created_by": "123456",
-//     "created_at": "2023-10-02T12:00:00Z",
-//     "public": true,
-//     "image_url": "/static/images/placeholders/placeholder_meal.png"
-// }];
 
 function isLoggedIn(req) {
     return req.session && req.session.userId;
@@ -383,8 +360,8 @@ app.post('/login', async (req, res) => {
                 });
             }).then(() => {
                 // console.log(user);
-                // res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
-                // res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
+                res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+                res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
                 console.log('User logged in successfully:', username);
                 return res.redirect('/');
             })
@@ -481,8 +458,8 @@ app.post('/register', async (req, res) => {
                 }
             });
         }).then(() => {
-            // res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
-            // res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
+            res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
+            res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
             console.log('User registered successfully:', username);
             return res.status(200).redirect('/onboarding');
         });
@@ -510,41 +487,6 @@ app.post('/register', async (req, res) => {
 });
 
 
-
-
-
-// ------------------- Profile Page -------------------
-// app.get('/profile', async (req, res) => {
-//     if (!req.session.userId) {
-//         return res.redirect('/login');
-//     }
-
-//     try {
-//         const user = await db.oneOrNone('SELECT username, profile_pic_url FROM users WHERE user_id = $1', [req.session.userId]);
-
-//         if (!user) {
-//             return res.status(404).send("User not found");
-//         }
-
-//         res.render("pages/profile", {
-//             loggedIn: isLoggedIn(req),
-//             user: {
-//                 username: user.username,
-//                 profile_pic_url: user.profile_pic_url || '/static/images/placeholders/placeholder_meal.png'
-//             },
-//             username: user.username,
-//             theme: prefersDarkMode(req)
-//         });
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).render("pages/login", {
-//             loggedIn: isLoggedIn(req),
-//             error: true,
-//             message: 'Error retrieving profile information',
-//             theme: prefersDarkMode(req)
-//         });
-//     }
-// });
 
 // Profile Page
 app.get('/profile/:userId', async (req, res) => {
@@ -910,21 +852,15 @@ app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
         await db.none(
             'UPDATE users SET bio = $1, profile_pic_url = $2 WHERE user_id = $3',
             [bio, profilePicUrl, req.session.userId]
-        );
+        ).then(() => {
 
-        res.redirect(`/profile/${req.session.userId}`);
+            res.cookie('profile_picture_url', profilePicUrl); // Set the profile picture cookie
+            res.redirect(`/profile/${req.session.userId}`);
+        });
+
     } catch (err) {
         console.error(err);
-        res.status(500).render('pages/profile', {
-            user,
-            recipes,
-            isOwner: true,
-            loggedIn: isLoggedIn(req),
-            profile_picture: getProfilePicURL(req),
-            theme: prefersDarkMode(req),
-            error: true,
-            message: 'Error updating profile.',
-        });
+        res.status(500).send('Error updating profile');
     }
 });
 
