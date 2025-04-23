@@ -347,7 +347,6 @@ app.post('/login', async (req, res) => {
             // Set both userId and username
             req.session.userId = user.user_id;
             req.session.username = username;
-            // console.log(username);
             // Save session and wait for completion
             await new Promise((resolve, reject) => {
                 req.session.save((error) => {
@@ -359,7 +358,6 @@ app.post('/login', async (req, res) => {
                     }
                 });
             }).then(() => {
-                // console.log(user);
                 res.cookie('theme', user.prefers_dark_mode ? 'dark' : 'light'); // Set the theme cookie
                 res.cookie('profile_picture_url', user.profile_pic_url); // Set the profile picture cookie
                 console.log('User logged in successfully:', username);
@@ -431,7 +429,7 @@ app.post('/register', async (req, res) => {
         );
 
         // Get User ID to log in
-        let user = await db.one( // TODO Might be able to get normal insert to return the user entry
+        let user = await db.one( 
             'SELECT * FROM users WHERE username = $1',
             [username]
         );
@@ -488,7 +486,7 @@ app.post('/register', async (req, res) => {
 
 
 
-// Profile Page
+// ------------------- Profile Page -------------------
 app.get('/profile/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
@@ -621,8 +619,6 @@ app.get('/recipes/:recipe_id', async (req, res) => {
             ORDER BY r.created_at DESC
         `, [recipe_id]);
 
-        // console.log(recipe.ingredients);
-
         const likesCount = await db.one('SELECT COUNT(*) FROM likes WHERE recipe_id = $1', [recipe_id]);
 
         const comments = await db.any(`
@@ -727,6 +723,8 @@ app.post('/my_recipes', async (req, res) => {
 
 // ------------------------------ Authentication Required From Here Onwards ------------------------------
 
+// ------------------- Authentication -------------------
+
 // Authentication Middleware.
 const auth = (req, res, next) => {
     if (!req.session.userId) {
@@ -739,7 +737,7 @@ const auth = (req, res, next) => {
 // Authentication Required
 app.use(auth);
 
-
+// ------------------- Post Recipes -------------------
 
 app.get('/post_recipe', (req, res) => {
     res.render("pages/post_recipe", {
@@ -809,7 +807,7 @@ app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
 
 
 
-// Onboarding Page
+// ------------------- Onboarding Page -------------------
 app.get('/onboarding', (req, res) => {
     if (!isLoggedIn(req)) return res.redirect('/login');
     res.render('pages/onboarding', {
@@ -841,7 +839,8 @@ app.post('/onboarding', upload.single('profilePic'), async (req, res) => {
 
 
 
-// Edit Profile
+// ------------------- Edit Profile -------------------
+
 app.post('/profile/edit', upload.single('profilePic'), async (req, res) => {
     if (!isLoggedIn(req)) return res.redirect('/login');
 
@@ -872,49 +871,6 @@ app.post('/profile/delete', async (req, res) => {
             'DELETE FROM recipes WHERE recipe_id = $1 AND created_by = $2',
             [req.body.recipe_id, req.session.userId]
         ).then(async () => {
-
-            //     const userId = req.params.userId;
-            //     const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
-
-            //     // const recipes = await db.any(
-            //     //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
-            //     //     [userId, req.session.userId]
-            //     // );
-            //     const recipes = await db.any(
-            //         `
-            //     SELECT r.*, 
-            //            u.username, 
-            //            u.profile_pic_url,
-            //            r.created_by, -- Include created_by for linking profiles
-            //            COALESCE(l.like_count, 0) AS like_count,
-            //            CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
-            //     FROM recipes r
-            //     LEFT JOIN users u ON r.created_by = u.user_id
-            //     LEFT JOIN (
-            //         SELECT recipe_id, COUNT(*) AS like_count
-            //         FROM likes
-            //         GROUP BY recipe_id
-            //     ) l ON r.recipe_id = l.recipe_id
-            //     LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
-            //     WHERE r.created_by = $1 AND (r.public = true OR r.created_by = $2)
-            //     ORDER BY r.created_at DESC
-            // `,
-            //         [userId, req.session.userId]
-            //     );
-
-            //     const isOwner = req.session.userId == userId;
-
-            //     res.render('pages/profile', {
-            //         user,
-            //         recipes,
-            //         isOwner,
-            //         loggedIn: isLoggedIn(req),
-            //         theme: prefersDarkMode(req),
-            //         error: false,
-            //         message: 'Recipe deleted successfully.',
-            //     });
-
-
             res.redirect(`/profile/${req.session.userId}`);
         });
 
@@ -933,10 +889,6 @@ app.post('/profile/delete', async (req, res) => {
     }
 
 });
-
-
-
-
 
 // ------------------- Logout -------------------
 
@@ -961,8 +913,8 @@ app.get('/logout', (req, res) => {
     });
 });
 
+// ------------------- Like/Unlike -------------------
 
-//like/unlike recipe
 app.post('/recipes/:recipe_id/like', async (req, res) => {
     if (!isLoggedIn(req)) {
         return res.status(401).send("Unauthorized");
@@ -989,8 +941,8 @@ app.post('/recipes/:recipe_id/like', async (req, res) => {
     }
 });
 
+// ------------------- Comment -------------------
 
-//post comment
 app.post('/recipes/:recipe_id/comments', async (req, res) => {
     if (!isLoggedIn(req)) {
         return res.status(401).send("Unauthorized");
@@ -1078,6 +1030,7 @@ app.get('/liked', async (req, res) => {
     });
 });
 
+// ------------------- Liked Recipes -------------------
 
 app.post('/liked', async (req, res) => {
     const sort_by = req.body.sort_by;
@@ -1112,11 +1065,8 @@ app.post('/liked', async (req, res) => {
     res.json({ recipesList });
 });
 
+// ------------------- Grocery List -------------------
 
-
-
-
-// ─── Grocery List Route───────────────────────────
 app.get('/list', async (req, res) => {
     try {
         // list id
@@ -1151,10 +1101,6 @@ app.get('/list', async (req, res) => {
         const totalCost = ingredients
             .reduce((sum, { cost }) => sum + parseFloat(cost), 0)
             .toFixed(2);
-
-        // console.log('[LIST] final ingredients array:', ingredients);
-        // console.log('[LIST] totalCost = $' + totalCost);
-
         // rendering
         res.render('pages/grocery_list', {
             loggedIn: isLoggedIn(req),
@@ -1175,8 +1121,6 @@ app.get('/list', async (req, res) => {
     }
 });
 
-
-// ─── POST /list/addItem ───────────────────────────
 app.post('/list/addItem', async (req, res) => {
     try {
 
@@ -1224,8 +1168,6 @@ app.post('/list/addItem', async (req, res) => {
     }
 });
 
-
-// ─── POST /list/removeItem ────────────────────────
 app.post('/list/removeItem', async (req, res) => {
     try {
         // find their list
@@ -1260,7 +1202,7 @@ app.post('/list/removeItem', async (req, res) => {
     }
 });
 
-
+// ------------------- Settings -------------------
 
 app.get('/settings', async (req, res) => {
 
@@ -1270,8 +1212,6 @@ app.get('/settings', async (req, res) => {
             'SELECT * FROM users WHERE user_id = $1 LIMIT 1',
             [req.session.userId]
         );
-
-        // console.log(user);
 
         res.status(200).render("pages/settings", {
             loggedIn: isLoggedIn(req),
@@ -1300,8 +1240,6 @@ app.get('/settings/update', async (req, res) => {
 
 app.post('/settings/update', async (req, res) => {
 
-    // console.log("Update request received");
-
     try {
 
         let user = await db.one(
@@ -1316,11 +1254,6 @@ app.post('/settings/update', async (req, res) => {
 
 
         res.status(200).redirect("/settings/update");
-        // res.status(200).redirect('back');
-        // res.status(200).render("pages/settings", {
-        //     loggedIn: isLoggedIn(req),
-        //     theme: req.body.prefers_dark_mode ? 'dark' : 'light'
-        // });
 
         console.log("User settings updated successfully:", user.username);
 
