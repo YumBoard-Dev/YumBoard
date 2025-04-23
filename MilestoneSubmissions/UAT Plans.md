@@ -19,7 +19,12 @@
 
 
 **Test Results**:
-- 
+- Navigated to the register page from the home page using the header link.
+- Tried submitting the form with missing fields and an error was displayed and form submission blocked.
+- Entered invalid password (failing regex) and received an appropriate error, and could not submit.
+- Submitted with a valid username and valid password and registration succeeded.
+- After registration, the user was automatically redirected to the home page.
+- Confirmed active session in browser dev tools; the session cookie was set and user was logged in.
 
 
 # Posting a Recipe
@@ -33,7 +38,6 @@
 2. Navigate to the "Post Recipe" page
 3. Fill out information & upload images for the new recipe
 	- User should not be able to post unless all required information is filled in
-	- If not image is provided, a placeholder is used. 
 4. Post the recipe
 
 **Verify**:
@@ -42,14 +46,21 @@
 
 
 **Test Results**:
-- 
+- Logged in as a test user without issue.
+- Navigated to the “Post Recipe” page and verified all form fields were visible and clearly labeled.
+- Tried submitting the form with missing required fields and received an error and submission was blocked (as expected).
+- Submitted a complete recipe with all required fields and a test image.
+- Redirected to the recipe's specific page on successful submission.
+- Page has all the correct information from when the recipe was posted.
 
 
 # Liking and Commenting a Recipe
 
 
 **Testing Data**: A valid `recipe` in the `recipes` table, and a valid `user` in the `users` table. 
+
 **Environment**: Cloud Deployment
+
 **User Acceptance Testers**: Someone who did not work on the app, so it is a fair test of how intuitive the interface is. 
 
 **Steps**:
@@ -65,22 +76,46 @@
 - An entry should be added to the `comments` table in the database which corresponds to the user commenting on a specific recipe
 - Once logged in on any account, the like and comment should be visible on the recipe's page. 
 
-
 **Test Results**:
-- 
+- Successfully logged in as a test user.
+- Navigated to the "Home" page and clicked on an existing recipe.
+- Clicked the heart icon and verified the recipe's like count updated instantly.
+- Typed a valid comment in the input box and clicked "Comment" and the new comment displayed instantly below the recipe.
+- Tried submitting a comment with an empty textbox but was given an alert telling me to write something.
+- Logged in with a different user an both like and comment from the original user were visible on the recipe's page.
 
 
+# Posting a Recipe
 
+**Testing Data**
+- A registered user in the users table.
+- A clean test environment (recipes table should be empty or monitored).
 
+**Environment**
+- Localhost deployment using the updated /post_recipe route.
 
+**User Acceptance Testers**
+- Someone who did not work on the app
 
+**Steps**
+1. Log in using an existing user account.
+2. Navigate to the "Post Recipe" page using the nav bar.
+3. Fill out the form.
+	- Enter the recipe name (required).
+	- Enter a description (optional).
+	- Enter time in a HH:MM format (e.g. 1:30 for 1 hour 30 minutes).
+	- Enter required ingredients in a comma seperated list (required).
+	- Upload an image.
+4. Submit the form.
 
+**Verify**
+- If any of the required fields are missing the form should not submit.
+- When all fields are filled out correctly a new record should be inserted into the `recipes` table with the corresponding data.
+- User should be redirected to the page of the newly uploaded recipe on success, with all the correct data from the form.
 
-
-
-
-
-
-
-
-
+**Test Results**
+- Successfully logged in as a test user and navigated to the "Post Recipe" page.
+- Left out required fields and got an alert saying to fill out the box.
+- Tried using incorrect format for duration and was not able to submit the form and got an alert.
+- Posted a recipe successfully with and without a description.
+- Redirected to the recipe's specific page after successful post.
