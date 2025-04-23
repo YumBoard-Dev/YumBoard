@@ -72,7 +72,7 @@ After successfully completing the steps from [How to run](#how-to-run),
 
 You can find the deployed application at [https://yumboard.onrender.com/](https://yumboard.onrender.com/).
 
-![[DeployedSiteScreenshot.png]]
+![DeployedSiteScreenshot.png](DeployedSiteScreenshot.png)
 
 
 
