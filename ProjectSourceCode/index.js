@@ -815,6 +815,8 @@ app.post("/onboarding", upload.single("profilePic"), async (req, res) => {
       [bio, profilePicUrl, req.session.userId]
     );
     // Redirect to the home page after onboarding
+    res.cookie("profile_picture_url", profilePicUrl); // Set the profile picture cookie
+
     res.redirect("/");
   } catch (err) {
     console.error(err);
