@@ -135,6 +135,11 @@ Handlebars.registerHelper("getCommaDelimitedCount", function (text) {
   return new Handlebars.SafeString(result);
 });
 
+Handlebars.registerHelper('split', function (str, splitBy) {
+    return str.split(splitBy);
+});
+
+
 Handlebars.registerHelper("lookup", function (obj, field) {
   return obj && obj[field];
 });
