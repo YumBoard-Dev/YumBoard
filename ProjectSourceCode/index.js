@@ -491,11 +491,6 @@ app.get('/profile/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
         const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
-
-        // const recipes = await db.any(
-        //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
-        //     [userId, req.session.userId]
-        // );
         const recipes = await db.any(
             `
             SELECT r.*, 
