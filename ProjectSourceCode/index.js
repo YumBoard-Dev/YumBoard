@@ -429,7 +429,7 @@ app.post('/register', async (req, res) => {
         );
 
         // Get User ID to log in
-        let user = await db.one( 
+        let user = await db.one(
             'SELECT * FROM users WHERE username = $1',
             [username]
         );
@@ -740,7 +740,7 @@ app.post('/my_recipes', async (req, res) => {
         ORDER BY ${orderBy}`,
         [userId]
     );
-    console.log('recipesList:', recipesList);
+    //console.log('recipesList:', recipesList);
     res.json({ recipesList });
 });
 
@@ -1017,14 +1017,29 @@ app.get('/liked', async (req, res) => {
             ORDER BY ${orderBy}`,
         [userId]
     );
-    // console.log('Recipes List:', recipes);
-    res.render('pages/liked', {
-        recipes,
-        profile_picture: getProfilePicURL(req),
-        loggedIn: isLoggedIn(req),
-        theme: prefersDarkMode(req),
-        username: req.session.username
-    });
+
+    if (recipes.length === 0) {
+        res.render('pages/liked', {
+            recipes,
+            profile_picture: getProfilePicURL(req),
+            loggedIn: isLoggedIn(req),
+            theme: prefersDarkMode(req),
+            username: req.session.username,
+            error: true,
+            message: 'No liked recipes found. Go to the home page to find some recipes!',
+        });
+    } else {
+
+        // console.log('Recipes List:', recipes);
+        res.render('pages/liked', {
+            recipes,
+            profile_picture: getProfilePicURL(req),
+            loggedIn: isLoggedIn(req),
+            theme: prefersDarkMode(req),
+            username: req.session.username
+        });
+    }
+
 });
 
 // ------------------- Liked Recipes -------------------

@@ -16,6 +16,7 @@
         </form>
     </div>
     <div class="row p-2 display-flex justify-content-center">
+        {{> alert}}
         <div id="recipeResults">
             {{#each recipes}}
             <div class="row p-2 display-flex justify-content-center">
@@ -53,7 +54,7 @@
                                 </div>
                                 <div class="col">
                                     <p>
-                                        {{#if duration.hours}}
+                                        Time: {{#if duration.hours}}
                                         {{#ifEquals duration.hours 1}}1 hour{{else}}{{duration.hours}}
                                         hours{{/ifEquals}}
                                         {{/if}}
@@ -86,7 +87,7 @@
 
             const { recipesList } = await res.json();
             renderRecipes(recipesList);
-        } catch(err) {
+        } catch (err) {
             console.error(err);
             document.getElementById("recipeResults").innerHTML =
                 '<p style="color:red;">Error loading recipes.</p>';
@@ -148,7 +149,7 @@
 
     function formatDuration(interval) {
         if (!interval) return 'Duration not available';
-        
+
         let h = 0, m = 0;
         if (interval.hours != null) h = +interval.hours;
         if (interval.minutes != null) m = +interval.minutes;
