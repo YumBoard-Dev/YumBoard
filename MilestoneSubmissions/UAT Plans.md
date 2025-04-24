@@ -1,8 +1,8 @@
 
 # Register
 
-**Testing Data**: None. A blank database is required. 
-**Environment**: Localhost
+**Testing Data**: None. A blank database is required.  
+**Environment**: Localhost  
 **User Acceptance Testers**: Someone who did not work on the app, so it is a fair test of how intuitive the interface is. 
 
 **Steps**: 
@@ -29,8 +29,8 @@
 
 # Posting a Recipe
 
-**Testing Data**: A registered user in the database, and some recipe `tags` in the tags table.
-**Environment**: Localhost
+**Testing Data**: A registered user in the database, and some recipe `tags` in the tags table.  
+**Environment**: Localhost  
 **User Acceptance Testers**: Someone who did not work on the app, so it is a fair test of how intuitive the interface is. 
 
 **Steps**:
@@ -50,6 +50,7 @@
 - Navigated to the “Post Recipe” page and verified all form fields were visible and clearly labeled.
 - Tried submitting the form with missing required fields and received an error and submission was blocked (as expected).
 - Submitted a complete recipe with all required fields and a test image.
+- Submitted a complete recipe with all required fields without an image and got the default image.
 - Redirected to the recipe's specific page on successful submission.
 - Page has all the correct information from when the recipe was posted.
 
@@ -57,10 +58,8 @@
 # Liking and Commenting a Recipe
 
 
-**Testing Data**: A valid `recipe` in the `recipes` table, and a valid `user` in the `users` table. 
-
-**Environment**: Cloud Deployment
-
+**Testing Data**: A valid `recipe` in the `recipes` table, and a valid `user` in the `users` table.  
+**Environment**: Cloud Deployment  
 **User Acceptance Testers**: Someone who did not work on the app, so it is a fair test of how intuitive the interface is. 
 
 **Steps**:
@@ -88,34 +87,46 @@
 # Posting a Recipe
 
 **Testing Data**
-- A registered user in the users table.
-- A clean test environment (recipes table should be empty or monitored).
+- A registered user in the users table with multiple liked posts.
+- All the posts have different durations, number of likes and created_at value.
 
-**Environment**
-- Localhost deployment using the updated /post_recipe route.
+**Environment**: Localhost  
 
-**User Acceptance Testers**
-- Someone who did not work on the app
+**User Acceptance Testers**: Someone who did not work on the app  
 
 **Steps**
-1. Log in using an existing user account.
-2. Navigate to the "Post Recipe" page using the nav bar.
-3. Fill out the form.
-	- Enter the recipe name (required).
-	- Enter a description (optional).
-	- Enter time in a HH:MM format (e.g. 1:30 for 1 hour 30 minutes).
-	- Enter required ingredients in a comma seperated list (required).
-	- Upload an image.
-4. Submit the form.
+1. Log in using the test user.
+2. Navigate to the "Liked" page using the nav bar.
+3. Use the “Sort your liked recipes” dropdown and select each of the following one by one, clicking the Sort button after each selection:
+	- Newest First
+	- Oldest First
+	- Longest Duration
+	- Shortest Duration
+	- Most Liked
+4. Observe the recipe list updating after each submission without refreshing the page.
+5. Simulate a backend failure (e.g., disconnect the database or shut down the server), then attempt to sort again.
 
 **Verify**
-- If any of the required fields are missing the form should not submit.
-- When all fields are filled out correctly a new record should be inserted into the `recipes` table with the corresponding data.
-- User should be redirected to the page of the newly uploaded recipe on success, with all the correct data from the form.
+- Default list loads with liked recipes sorted by newest posts.
+- Changing the sort selection correctly reorders recipes:
+	- Oldest first
+	- Longest duration first
+	- Shortest duration first
+	- Most Liked First
+- All of selections properly sort after a reload
+- Each recipe shows all the expected information.
+- When there is an error a red error message is displayed saying "Error loading recipes".
+- If the user has no liked posts a message saying "No recipes found" is shown.
 
 **Test Results**
-- Successfully logged in as a test user and navigated to the "Post Recipe" page.
-- Left out required fields and got an alert saying to fill out the box.
-- Tried using incorrect format for duration and was not able to submit the form and got an alert.
-- Posted a recipe successfully with and without a description.
-- Redirected to the recipe's specific page after successful post.
+- Navigated to the `/liked` page from the nav and saw default list sorted by newest.
+- Selected each sort option and verified correct reordering visually:
+	- Oldest First sorted by creation date ascending
+	- Longest Duration sorted by total duration descending
+	- Shortest Duration sorted by total duration ascending
+	- Most Liked sorted by total like count descending
+- Sorting triggered a fetch and updated the recipe list after reloading the page.
+- Simulated a backend outage by stopping the server and clicked Sort:
+	- Received red error text and no recipe data was updated.
+- User with no liked posts opened the page and saw error message
+	- Saw the message “No recipes found.” confirming empty state handling
