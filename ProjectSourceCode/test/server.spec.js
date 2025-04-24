@@ -120,6 +120,24 @@ describe('Testing Login API', () => {
   });
 
 
+// ------------------- Home -------------------
+
+
+
+  describe('Testing Home API', () => {
+    it('positive : /', done => {
+      chai
+        .request(server)
+        .get('/')
+        .end((err, res) => {
+          expect(res).to.have.status(200); // Expecting a success status code
+          res.should.be.html; // Expecting a HTML response
+          done();
+        });
+    });
+  });
+
+
 
 
 
