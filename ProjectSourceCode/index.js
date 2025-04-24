@@ -683,48 +683,6 @@ app.get('/recipes/:recipe_id', async (req, res) => {
     }
 });
 
-
-app.post('/my_recipes', async (req, res) => {
-    const sort_by = req.body.sort_by;
-    const userId = req.body.userId;
-
-    console.log('User ID:', userId);
-    console.log('Sort By:', sort_by);
-
-    let orderBy = 'r.created_at DESC';
-
-    if (sort_by === 'ascTime') orderBy = 'r.created_at ASC';
-    else if (sort_by === 'descTime') orderBy = 'r.created_at DESC';
-    else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
-    else if (sort_by === 'descDuration') orderBy = 'r.duration DESC';
-    else if (sort_by === 'popularity') orderBy = 'like_count DESC';
-
-    const recipesList = await db.query(
-        `SELECT r.*, 
-                   u.username, 
-                   u.profile_pic_url,
-                   COALESCE(l.like_count, 0) AS like_count,
-                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
-            FROM recipes r
-            LEFT JOIN users u ON r.created_by = u.user_id
-            LEFT JOIN (
-                SELECT recipe_id, COUNT(*) AS like_count
-                FROM likes
-                GROUP BY recipe_id
-            ) l ON r.recipe_id = l.recipe_id
-            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
-        WHERE r.created_by = $1
-        GROUP BY r.recipe_id, u.username, u.profile_pic_url, ul.user_id, l.like_count
-        ORDER BY ${orderBy}`,
-        [userId]
-    );
-
-    res.json({ recipesList });
-});
-
-
-
-
 // ------------------------------ Authentication Required From Here Onwards ------------------------------
 
 // Authentication Middleware.
@@ -747,6 +705,45 @@ app.get('/post_recipe', (req, res) => {
         profile_picture: getProfilePicURL(req),
         theme: prefersDarkMode(req),
     })
+});
+
+app.post('/my_recipes', async (req, res) => {
+    const sort_by = req.body.sort_by;
+    const userId = req.body.userId;
+
+    console.log('User ID:', userId);
+    console.log('Sort By:', sort_by);
+
+    let orderBy = 'r.created_at DESC';
+
+    if (sort_by === 'ascTime') orderBy = 'r.created_at ASC';
+    else if (sort_by === 'descTime') orderBy = 'r.created_at DESC';
+    else if (sort_by === 'ascDuration') orderBy = 'r.duration ASC';
+    else if (sort_by === 'descDuration') orderBy = 'r.duration DESC';
+    else if (sort_by === 'popularity') orderBy = 'like_count DESC';
+
+    const recipesList = await db.query(
+        `SELECT r.*, 
+                   u.username, 
+                   u.profile_pic_url,
+                   COALESCE(l.like_count, 0) AS like_count,
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user,
+                   (r.created_by = $1) AS isOwner
+            FROM recipes r
+            LEFT JOIN users u ON r.created_by = u.user_id
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*) AS like_count
+                FROM likes
+                GROUP BY recipe_id
+            ) l ON r.recipe_id = l.recipe_id
+            LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
+        WHERE r.created_by = $1
+        GROUP BY r.recipe_id, u.username, u.profile_pic_url, ul.user_id, l.like_count
+        ORDER BY ${orderBy}`,
+        [userId]
+    );
+    console.log('recipesList:', recipesList);
+    res.json({ recipesList });
 });
 
 app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
@@ -872,49 +869,6 @@ app.post('/profile/delete', async (req, res) => {
             'DELETE FROM recipes WHERE recipe_id = $1 AND created_by = $2',
             [req.body.recipe_id, req.session.userId]
         ).then(async () => {
-
-            //     const userId = req.params.userId;
-            //     const user = await db.one('SELECT username, bio, profile_pic_url FROM users WHERE user_id = $1', [userId]);
-
-            //     // const recipes = await db.any(
-            //     //     `SELECT * FROM recipes WHERE created_by = $1 AND (public = true OR created_by = $2)`,
-            //     //     [userId, req.session.userId]
-            //     // );
-            //     const recipes = await db.any(
-            //         `
-            //     SELECT r.*, 
-            //            u.username, 
-            //            u.profile_pic_url,
-            //            r.created_by, -- Include created_by for linking profiles
-            //            COALESCE(l.like_count, 0) AS like_count,
-            //            CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
-            //     FROM recipes r
-            //     LEFT JOIN users u ON r.created_by = u.user_id
-            //     LEFT JOIN (
-            //         SELECT recipe_id, COUNT(*) AS like_count
-            //         FROM likes
-            //         GROUP BY recipe_id
-            //     ) l ON r.recipe_id = l.recipe_id
-            //     LEFT JOIN likes ul ON r.recipe_id = ul.recipe_id AND ul.user_id = $1
-            //     WHERE r.created_by = $1 AND (r.public = true OR r.created_by = $2)
-            //     ORDER BY r.created_at DESC
-            // `,
-            //         [userId, req.session.userId]
-            //     );
-
-            //     const isOwner = req.session.userId == userId;
-
-            //     res.render('pages/profile', {
-            //         user,
-            //         recipes,
-            //         isOwner,
-            //         loggedIn: isLoggedIn(req),
-            //         theme: prefersDarkMode(req),
-            //         error: false,
-            //         message: 'Recipe deleted successfully.',
-            //     });
-
-
             res.redirect(`/profile/${req.session.userId}`);
         });
 
