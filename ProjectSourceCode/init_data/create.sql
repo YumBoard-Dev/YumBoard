@@ -9,19 +9,6 @@ DROP TABLE IF EXISTS recipe_to_tags CASCADE;
 DROP TABLE IF EXISTS likes CASCADE;
 DROP TABLE IF EXISTS comments CASCADE;
 
--------------------------------------------------
--- Users Table
--- Description : Stores user account information
--------------------------------------------------
-
---CREATE TABLE IF NOT EXISTS users (
---  username VARCHAR(100) PRIMARY KEY NOT NULL, -- Unique username for each user
---  -- email VARCHAR(100), -- Made able to be NULL 
---  password VARCHAR(255) NOT NULL,
---  profile_pic_url VARCHAR(300),
---  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP    -- Time user was created so it's easier to keep track of users
-
---);
 
 -------------------------------------------------
 -- Users Table for Jason
@@ -34,9 +21,9 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     profile_pic_url TEXT DEFAULT '/static/images/placeholders/placeholder_profile.png',
     bio TEXT DEFAULT 'This user has not added a bio yet.',
-    prefers_dark_mode BOOLEAN DEFAULT FALSE NOT NULL -- User preference for dark mode
-
+    prefers_dark_mode BOOLEAN DEFAULT FALSE NOT NULL                                    -- User preference for dark mode
 );
+
 
 -------------------------------------------------
 -- Recipes Table
@@ -79,6 +66,7 @@ CREATE TABLE IF NOT EXISTS comments (
     created_at TIMESTAMP DEFAULT NOW(),
     parent_comment_id INT REFERENCES comments(comment_id) ON DELETE CASCADE
 );
+
 
 -------------------------------------------------
 -- Example Table
@@ -126,20 +114,6 @@ INSERT INTO recipes (title, description, instructions, ingredients, created_by, 
 
 
 -- -------------------------------------------------
--- -- User_to_Recipes Table
--- -- Description : Join table for saved or liked recipes
--- -------------------------------------------------
-
--- CREATE TABLE IF NOT EXISTS user_to_recipes (
---   user_id INT NOT NULL,                              -- FK to users
---   recipe_id INT NOT NULL,                            -- FK to recipes                    
---   relationship_type BOOLEAN DEFAULT FALSE,           -- For 'saved' or 'liked' recipes
---   PRIMARY KEY (user_id, recipe_id),                  -- Composite PK: ensures one relationship per pair
---   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
---   FOREIGN KEY (recipe_id) REFERENCES recipes(recipe_id) ON DELETE CASCADE
--- );
-
--- -------------------------------------------------
 -- -- Grocery Lists Table
 -- -- Description : Stores each user's shopping cart
 -- -------------------------------------------------
@@ -150,6 +124,7 @@ CREATE TABLE IF NOT EXISTS grocery_lists (
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
+
 -- -------------------------------------------------
 -- -- List Ingredients Table
 -- -- Description : Stores ingredient items inside each user's cart
@@ -157,8 +132,8 @@ CREATE TABLE IF NOT EXISTS grocery_lists (
 
 CREATE TABLE IF NOT EXISTS list_ingredients (
     list_id INT NOT NULL,                              -- FK to grocery_carts
-    ingredient_text TEXT NOT NULL,
-    cost DECIMAL(10, 2) DEFAULT 0.00 NOT NULL,                -- Cost of the ingredient
+    ingredient_text TEXT NOT NULL,                     -- Ingredients
+    cost DECIMAL(10, 2) DEFAULT 0.00 NOT NULL,         -- Cost of the ingredient
     PRIMARY KEY (list_id, ingredient_text),            -- Composite PK: no duplicate ingredients per cart
     FOREIGN KEY (list_id) REFERENCES grocery_lists(list_id) ON DELETE CASCADE
 );
@@ -185,29 +160,3 @@ INSERT INTO list_ingredients (list_id, ingredient_text) VALUES
 (2, 'tahini'),
 (2, 'lemon juice'),
 (2, 'garlic');
-
-
-
--- -------------------------------------------------
--- -- Recipe Tags Table
--- -- Description : Stores dietary or allergen tags like 'vegan', 'gluten-free', etc.
--- -------------------------------------------------
-
--- CREATE TABLE IF NOT EXISTS recipe_tags (
---   tag_id SERIAL PRIMARY KEY NOT NULL,
---   name VARCHAR(50) NOT NULL UNIQUE                   -- Tag name, must be unique
--- );
-
--- -------------------------------------------------
--- -- Recipe Tag Assignments Table
--- -- Description : Join table connecting recipes to tags
--- -------------------------------------------------
-
--- CREATE TABLE IF NOT EXISTS recipe_to_tags (
---   recipe_id INT NOT NULL,                            -- FK to recipes
---   tag_id INT NOT NULL,                               -- FK to recipe_tags
---   PRIMARY KEY (recipe_id, tag_id),                   -- Composite PK: one tag per recipe
---   FOREIGN KEY (recipe_id) REFERENCES recipes(recipe_id) ON DELETE CASCADE,
---   FOREIGN KEY (tag_id) REFERENCES recipe_tags(tag_id) ON DELETE CASCADE
--- );
-
