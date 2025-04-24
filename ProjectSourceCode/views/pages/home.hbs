@@ -18,7 +18,8 @@
                             <a class="col-md-auto" href="/users/{{created_by}}">
                                 <div class="hstack gap-3">
                                     <b>{{username}}</b>
-                                    <img src="{{profile_pic_url}}" class="recipe-profile-picture" alt="{{username}}'s profile picture">
+                                    <img src="{{profile_pic_url}}" class="recipe-profile-picture"
+                                        alt="{{username}}'s profile picture">
                                 </div>
                             </a>
                         </div>
@@ -34,8 +35,12 @@
                             <a href="/recipes/{{recipe_id}}" class="btn btn-primary">View Recipe</a>
                         </div>
                         <div class="col">
-                            <p>Prep Time: {{prep_time}} minutes</p>
-                            <p>Cook Time: {{cook_time}} minutes</p>
+                            <p>Time: {{#if duration.hours}}
+                                {{#ifEquals duration.hours 1}}1 hour{{else}}{{duration.hours}} hours{{/ifEquals}}
+                                {{/if}}
+                                {{#if duration.minutes}}
+                                {{#if duration.hours}} {{/if}}{{duration.minutes}} minutes
+                                {{/if}}</p>
                         </div>
                     </div>
                 </div>

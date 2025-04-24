@@ -90,15 +90,16 @@ INSERT INTO users (username, password, profile_pic_url) VALUES
 ('user123', 'hashed_password1', '/static/images/placeholders/placeholder_profile_1.jpg'),
 ('user456', 'hashed_password2', '/static/images/placeholders/placeholder_profile_2.jpg');
 
+
 -- Then, insert example recipes. Make sure that created_by references an existing user_id.
-INSERT INTO recipes (title, description, instructions, ingredients, created_by, public, image_url)
-VALUES 
+INSERT INTO recipes (title, description, instructions, ingredients, created_by, duration, public, image_url) VALUES
 (
     'Spaghetti Bolognese', 
     'A classic Italian pasta dish with a rich meat sauce.',
     'Cook the spaghetti according to package instructions. | In a separate pan, brown the ground beef. | Add chopped onions and garlic, and cook until softened. | Stir in tomato sauce and simmer for 20 minutes. | Serve the sauce over the spaghetti.',
     'spaghetti, ground beef, onions, garlic, tomato sauce',
     1,
+    '45 minutes',
     true,
     '/static/images/placeholders/danijela-prijovic-qits91IZv1o-unsplash.jpg'
 ),
@@ -108,8 +109,19 @@ VALUES
     'Cook quinoa according to package instructions. | Roast your choice of vegetables (e.g., sweet potatoes, broccoli, bell peppers) in the oven. | Prepare a tahini dressing by mixing tahini, lemon juice, garlic, and water. | Assemble the bowl with quinoa, roasted vegetables, and drizzle with tahini dressing.',
     'quinoa, sweet potatoes, broccoli, bell peppers, tahini, lemon juice, garlic',
     2,
+    '30 minutes',
     true,
     '/static/images/placeholders/martin-baron-PBgbIbOsprk-unsplash.jpg'
+),
+(
+    'Classic American Burger', 
+    'A juicy all-American burger with all the fixings on a toasted brioche bun.',
+    'Season ground beef with salt and pepper and form into patties. | Grill or pan-fry the patties to desired doneness. | Toast the brioche buns. | Assemble the burger with lettuce, tomato, onion, cheese, and condiments of choice.',
+    'ground beef, brioche buns, lettuce, tomato, onion, cheddar cheese, ketchup, mustard, mayo',
+    2,
+    '25 minutes',
+    true,
+    '/static/images/placeholders/mae-mu-I7A_pHLcQK8-unsplash.jpg'
 );
 
 
