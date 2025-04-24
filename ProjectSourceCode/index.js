@@ -679,6 +679,29 @@ app.get('/recipes/:recipe_id', async (req, res) => {
     }
 });
 
+// ------------------------------ Authentication Required From Here Onwards ------------------------------
+
+// Authentication Middleware.
+const auth = (req, res, next) => {
+    if (!req.session.userId) {
+        // Default to login page.
+        return res.redirect('/login');
+    }
+    next();
+};
+
+// Authentication Required
+app.use(auth);
+
+
+
+app.get('/post_recipe', (req, res) => {
+    res.render("pages/post_recipe", {
+        loggedIn: isLoggedIn(req),
+        profile_picture: getProfilePicURL(req),
+        theme: prefersDarkMode(req),
+    })
+});
 
 app.post('/my_recipes', async (req, res) => {
     const sort_by = req.body.sort_by;
@@ -700,7 +723,8 @@ app.post('/my_recipes', async (req, res) => {
                    u.username, 
                    u.profile_pic_url,
                    COALESCE(l.like_count, 0) AS like_count,
-                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user
+                   CASE WHEN ul.user_id IS NULL THEN false ELSE true END AS liked_by_user,
+                   (r.created_by = $1) AS isOwner
             FROM recipes r
             LEFT JOIN users u ON r.created_by = u.user_id
             LEFT JOIN (
@@ -714,7 +738,7 @@ app.post('/my_recipes', async (req, res) => {
         ORDER BY ${orderBy}`,
         [userId]
     );
-
+    console.log('recipesList:', recipesList);
     res.json({ recipesList });
 });
 
