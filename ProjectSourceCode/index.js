@@ -681,6 +681,8 @@ app.get('/recipes/:recipe_id', async (req, res) => {
 
 // ------------------------------ Authentication Required From Here Onwards ------------------------------
 
+// ------------------- Authentication -------------------
+
 // Authentication Middleware.
 const auth = (req, res, next) => {
     if (!req.session.userId) {
@@ -693,7 +695,7 @@ const auth = (req, res, next) => {
 // Authentication Required
 app.use(auth);
 
-
+// ------------------- Post Recipes -------------------
 
 app.get('/post_recipe', (req, res) => {
     res.render("pages/post_recipe", {
@@ -740,35 +742,6 @@ app.post('/my_recipes', async (req, res) => {
     );
     console.log('recipesList:', recipesList);
     res.json({ recipesList });
-});
-
-
-
-
-// ------------------------------ Authentication Required From Here Onwards ------------------------------
-
-// ------------------- Authentication -------------------
-
-// Authentication Middleware.
-const auth = (req, res, next) => {
-    if (!req.session.userId) {
-        // Default to login page.
-        return res.redirect('/login');
-    }
-    next();
-};
-
-// Authentication Required
-app.use(auth);
-
-// ------------------- Post Recipes -------------------
-
-app.get('/post_recipe', (req, res) => {
-    res.render("pages/post_recipe", {
-        loggedIn: isLoggedIn(req),
-        profile_picture: getProfilePicURL(req),
-        theme: prefersDarkMode(req),
-    })
 });
 
 app.post('/post_recipe', upload.single('imageUpload'), async (req, res) => {
