@@ -84,7 +84,7 @@
 - Logged in with a different user an both like and comment from the original user were visible on the recipe's page.
 
 
-# Posting a Recipe
+# Viewing & Sorting Liked Recipes
 
 **Testing Data**
 - A registered user in the users table with multiple liked posts.

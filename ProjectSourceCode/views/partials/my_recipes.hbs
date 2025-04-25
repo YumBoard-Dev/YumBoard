@@ -49,6 +49,7 @@
                   <p>{{getCommaDelimitedCount ingredients}} Ingredients</p>
                   <p>Likes: {{like_count}}</p>
                   <a href="/recipes/{{recipe_id}}" class="btn btn-primary">View Recipe</a>
+                  {{#if ../isOwner}}
                   <button
                     type="button"
                     class="btn btn-danger ms-2"
@@ -58,6 +59,7 @@
                   >
                     Delete
                   </button>
+                  {{/if}}
 
                 </div>
                 <div class="col">
@@ -106,8 +108,8 @@
       console.log('this');
       if (!res.ok) throw new Error(res.statusText);
 
-      const { recipesList } = await res.json();
-      renderRecipes(recipesList);
+      const { recipesList, isOwner } = await res.json();
+      renderRecipes(recipesList, isOwner);
     } catch (err) {
       console.error(err);
       document.getElementById("recipeResults").innerHTML =
@@ -115,7 +117,7 @@
     }
   });
 
-  function renderRecipes(recipes) {
+  function renderRecipes(recipes, isOwner) {
     if (!recipes.length) {
       return document.getElementById("recipeResults")
         .innerHTML = '<p>No recipes found.</p>';
@@ -153,7 +155,8 @@
                     <p>Likes: ${r.like_count}</p>
                     <a href="/recipes/${r.recipe_id}" class="btn btn-primary">View Recipe</a>
 
-                    <!-- ↓ NEW DELETE BUTTON ↓ -->
+                    ${isOwner ? `
+                      <!-- ↓ NEW DELETE BUTTON ↓ -->
                     <button
                       type="button"
                       class="btn btn-danger ms-2"
@@ -163,12 +166,13 @@
                     >
                       Delete
                     </button>
-                    <!-- ↑ END DELETE BUTTON ↑ -->
+                    <!-- ↑ END DELETE BUTTON ↑ -->` : ''}
+                    
 
                   </div>
                   <div class="col">
                     <p>
-                      ${formatDuration(r.duration)}
+                      Time: ${formatDuration(r.duration)}
                     </p>
                   </div>
                 </div>
