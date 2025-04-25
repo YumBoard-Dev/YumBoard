@@ -23,7 +23,7 @@ services:
 
     # Change the command to `npm run testandrun` to run mocha
     # Change the command tp `npm start` to run the server normally
-    command: 'npm start' 
+    command: 'npm run testandrun' 
 
 
 # This defines our volume(s), which will persist throughout startups.
