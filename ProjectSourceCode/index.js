@@ -710,7 +710,7 @@ app.post("/my_recipes", async (req, res) => {
         ORDER BY ${orderBy}`,
     [userId]
   );
-  res.json({ recipesList });
+  res.json({ recipesList, isOwner: req.session.userId == userId });
 });
 
 app.post("/post_recipe", upload.single("imageUpload"), async (req, res) => {
@@ -851,26 +851,37 @@ app.post("/profile/edit", upload.single("profilePic"), async (req, res) => {
 
 app.post("/profile/delete", async (req, res) => {
   try {
-    await db
-      .none("DELETE FROM recipes WHERE recipe_id = $1 AND created_by = $2", [
-        req.body.recipe_id,
-        req.session.userId,
-      ])
-      .then(async () => {
-        res.redirect(`/profile/${req.session.userId}`);
-      });
+    // First delete all likes associated with this recipe
+    await db.none("DELETE FROM likes WHERE recipe_id = $1", [
+      req.body.recipe_id
+    ]);
+    
+    // Then delete the comments associated with this recipe
+    await db.none("DELETE FROM comments WHERE recipe_id = $1", [
+      req.body.recipe_id
+    ]);
+    
+    // Finally delete the recipe itself
+    await db.none("DELETE FROM recipes WHERE recipe_id = $1 AND created_by = $2", [
+      req.body.recipe_id,
+      req.session.userId,
+    ])
+    .then(() => {
+      res.redirect(`/profile/${req.session.userId}`);
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).render("pages/profile", {
-      user,
-      recipes,
-      isOwner,
-      loggedIn: isLoggedIn(req),
-      profile_picture: getProfilePicURL(req),
-      theme: prefersDarkMode(req),
-      error: true,
-      message: "Problem deleting recipe",
-    });
+    res.status(500).send("Error deleting recipe");
+    // .render("pages/profile", {
+    //   user,
+    //   recipes,
+    //   isOwner,
+    //   loggedIn: isLoggedIn(req),
+    //   profile_picture: getProfilePicURL(req),
+    //   theme: prefersDarkMode(req),
+    //   error: true,
+    //   message: "Problem deleting recipe",
+    // });
   }
 });
 
