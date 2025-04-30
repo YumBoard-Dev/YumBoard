@@ -139,7 +139,28 @@ describe('Testing Login API', () => {
 
 
 
+// ------------------- /recipes/:id TESTS -------------------
+describe('GET /recipes/:id', () => {
+  it('positive : should return 200 & render HTML for an existing recipe', done => {
+    chai.request(server)
+      .get('/recipes/1')                 
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        res.should.be.html;
+        done();
+      });
+  });
 
+  it('negative : should return 500 & error text for a non-existent recipe', done => {
+    chai.request(server)
+      .get('/recipes/999999')            
+      .end((err, res) => {
+        expect(res).to.have.status(500);
+        expect(res.text).to.equal('Error retrieving recipe'); 
+        done();
+      });
+  });
+});
 
 
 
